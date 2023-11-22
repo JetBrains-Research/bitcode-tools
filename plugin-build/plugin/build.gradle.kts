@@ -4,6 +4,7 @@ plugins {
     kotlin("jvm")
     `java-gradle-plugin`
     alias(libs.plugins.pluginPublish)
+    `kotlin-dsl`
 }
 
 dependencies {
