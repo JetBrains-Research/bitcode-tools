@@ -25,7 +25,7 @@ gradleEnterprise {
     }
 }
 
-rootProject.name = "kotlin-gradle-plugin-template"
+rootProject.name = "bitcode-tools"
 
 include(":example")
 includeBuild("plugin-build")
