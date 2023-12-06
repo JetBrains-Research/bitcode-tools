@@ -1,12 +1,11 @@
 package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
 
 import org.gradle.api.Project
-import org.gradle.api.provider.Property
 import javax.inject.Inject
 
 @Suppress("UnnecessaryAbstractClass")
 abstract class DecompileBitcodeExtension @Inject constructor(project: Project) {
-    
+
     // required to initialize properties of type Property<*> correctly
     private val objects = project.objects
 

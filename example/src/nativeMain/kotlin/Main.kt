@@ -18,7 +18,7 @@ fun doNewYearCleanUp(
     bookShelf: BookShelf,
     todoList: List<Task>,
     christmasTree: ChristmasTree,
-    friends: List<Friend>,
+    friends: List<Friend>
 ) {
     bookShelf.books.sortWith(compareBy<Book> { it.author }.thenBy { it.name })
     todoList.forEach { task ->
@@ -39,8 +39,8 @@ fun main() {
             mutableListOf(
                 Book("The Stranger", "Max Frei"),
                 Book("Zhalobnaya kniga", "Max Frei"),
-                Book("The Razor's Edge", "William Somerset Maugham"),
-            ),
+                Book("The Razor's Edge", "William Somerset Maugham")
+            )
         ),
         listOf(
             Task {
@@ -51,14 +51,14 @@ fun main() {
                 listOf("grocery", "clothing", "gifts").forEach { shop ->
                     println("Do shopping at my favourite $shop shop")
                 }
-            },
+            }
         ),
         ChristmasTree(),
         listOf(
             Friend("dear mom"),
             Friend("my love"),
             Friend("coolest bro"),
-            Friend("catty the cat"),
-        ),
+            Friend("catty the cat")
+        )
     )
 }

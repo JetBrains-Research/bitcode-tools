@@ -11,12 +11,12 @@ const val TASK_NAME = "decompileBitcode"
 abstract class DecompileBitcodePlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create(EXTENSION_NAME, DecompileBitcodeExtension::class.java, project)
-        
+
         // TODO: refactor and split into functions
         project.afterEvaluate {
             val linkTask = project.tasks.named(extension.linkTaskName)
             val tmpArtifactsDirectory = project.layout.projectDirectory.dir(extension.tmpArtifactsDirectoryPath)
-            
+
             linkTask {
                 outputs.dir(tmpArtifactsDirectory)
                 // TODO?: check whether it overrides original outputs or just adds a new one
@@ -29,7 +29,7 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
                 inputFile.set(tmpArtifactsDirectory.file("out.bc"))
                 outputFile.set(tmpArtifactsDirectory.file("bitcode.ll"))
             }
-            
+
             // configure compiler so that it produces temporary artifacts
             val shouldProduceBitcode = gradle.startParameter.taskNames.any { it.contains("decompileBitcode") }
             if (shouldProduceBitcode) {
