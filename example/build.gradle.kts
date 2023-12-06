@@ -58,7 +58,8 @@ decompileBitcodeConfig {
         hostOs == "Linux" -> "linkReleaseExecutableLinuxX64"
         hostOs == "Mac OS X" && arch == "x86_64" -> "linkReleaseExecutableMacosX64"
         hostOs == "Mac OS X" && arch == "aarch64" -> "linkReleaseExecutableMacosArm64"
-        else -> throw GradleException("Unsupported target platform")
+        hostOs.startsWith("Windows") -> "linkReleaseExecutableMingwX64"
+        else -> throw GradleException("Unsupported target platform: $hostOs / $arch")
     }
     tmpArtifactsDirectoryPath = "build/bitcode"
     setCompilerFlags = { compilerFlags ->
