@@ -58,7 +58,7 @@ decompileBitcodeConfig {
         hostOs == "Linux" -> "linkReleaseExecutableLinuxX64"
         hostOs == "Mac OS X" && arch == "x86_64" -> "linkReleaseExecutableMacosX64"
         hostOs == "Mac OS X" && arch == "aarch64" -> "linkReleaseExecutableMacosArm64"
-        hostOs.startsWith("Windows") -> "linkReleaseExecutableMingwX64"
+        hostOs.startsWith("Windows") -> throw GradleException("Windows is currently unsupported: unable to install `llvm-dis` tool")
         else -> throw GradleException("Unsupported target platform: $hostOs / $arch")
     }
     tmpArtifactsDirectoryPath = "build/bitcode"
