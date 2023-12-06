@@ -25,6 +25,10 @@ jobs:
         uses: gradle/gradle-build-action@v2
       - name: Run Gradle tasks
         run: ./gradlew preMerge --continue
+      - name: Set up LLVM for `llvm-dis` tool
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: '14.0'
 
         # run the `:example:decompileBitcode` task created by the plugin
       - name: Run the plugin
