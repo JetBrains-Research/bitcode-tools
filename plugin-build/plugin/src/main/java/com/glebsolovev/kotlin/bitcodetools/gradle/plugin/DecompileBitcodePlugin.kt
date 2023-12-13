@@ -1,11 +1,12 @@
 package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
 
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFile
 import org.gradle.kotlin.dsl.*
-import java.nio.file.Files.createDirectories
 import java.io.File
-import org.gradle.api.GradleException
+import java.nio.file.Files.createDirectories
 
 const val EXTENSION_NAME = "decompileBitcodeConfig"
 const val TASK_NAME = "decompileBitcode"
@@ -14,6 +15,8 @@ private fun String.validateExtension(expectedExt: String): Boolean {
     val actualExt = File(this).extension
     return actualExt == expectedExt
 }
+
+private fun RegularFile.toRelativePath(project: Project) = asFile.toRelativeString(project.projectDir)
 
 abstract class DecompileBitcodePlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -25,11 +28,11 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
             val tmpArtifactsDirectory = project.layout.projectDirectory.dir(extension.tmpArtifactsDirectoryPath)
 
             val bcInputFileName = extension.bcInputFileName
-            if(!bcInputFileName.validateExtension("bc")) {
+            if (!bcInputFileName.validateExtension("bc")) {
                 throw GradleException("`bcInputFileName` should have `.bc` extension")
             }
             val llOutputFileName = extension.llOutputFileName
-            if(!llOutputFileName.validateExtension("ll")) {
+            if (!llOutputFileName.validateExtension("ll")) {
                 throw GradleException("`llOutputFileName` should have `.ll` extension")
             }
 
@@ -38,8 +41,12 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
             }
             project.tasks.register<DecompileBitcodeTask>(TASK_NAME) {
                 dependsOn(linkTask)
-                inputFile.set(tmpArtifactsDirectory.file(bcInputFileName))
-                outputFile.set(tmpArtifactsDirectory.file(llOutputFileName))
+                inputFilePath.convention(
+                    tmpArtifactsDirectory.file(bcInputFileName).toRelativePath(project)
+                )
+                outputFilePath.convention(
+                    tmpArtifactsDirectory.file(llOutputFileName).toRelativePath(project)
+                )
             }
 
             // configure compiler so that it produces temporary artifacts
