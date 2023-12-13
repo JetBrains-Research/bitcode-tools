@@ -4,9 +4,16 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.*
 import java.nio.file.Files.createDirectories
+import java.io.File
+import org.gradle.api.GradleException
 
 const val EXTENSION_NAME = "decompileBitcodeConfig"
 const val TASK_NAME = "decompileBitcode"
+
+private fun String.validateExtension(expectedExt: String): Boolean {
+    val actualExt = File(this).extension
+    return actualExt == expectedExt
+}
 
 abstract class DecompileBitcodePlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -16,6 +23,15 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
         project.afterEvaluate {
             val linkTask = project.tasks.named(extension.linkTaskName)
             val tmpArtifactsDirectory = project.layout.projectDirectory.dir(extension.tmpArtifactsDirectoryPath)
+            
+            val bcInputFileName = extension.bcInputFileName
+            if(!bcInputFileName.validateExtension("bc")) {
+                throw GradleException("`bcInputFileName` should have `.bc` extension")
+            }
+            val llOutputFileName = extension.llOutputFileName
+            if(!llOutputFileName.validateExtension("ll")) {
+                throw GradleException("`llOutputFileName` should have `.ll` extension")
+            }
 
             linkTask {
                 outputs.dir(tmpArtifactsDirectory)
@@ -25,9 +41,8 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
             // project.tasks.register<DecompileBitcodeTask>("decompileBitcode") {
             project.tasks.register(TASK_NAME, DecompileBitcodeTask::class.java) {
                 dependsOn(linkTask)
-                // TODO: support file names setup in the extension
-                inputFile.set(tmpArtifactsDirectory.file("out.bc"))
-                outputFile.set(tmpArtifactsDirectory.file("bitcode.ll"))
+                inputFile.set(tmpArtifactsDirectory.file(bcInputFileName))
+                outputFile.set(tmpArtifactsDirectory.file(llOutputFileName))
             }
 
             // configure compiler so that it produces temporary artifacts

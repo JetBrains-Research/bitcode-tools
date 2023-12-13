@@ -13,4 +13,7 @@ abstract class DecompileBitcodeExtension @Inject constructor(project: Project) {
     abstract var linkTaskName: String
     abstract var tmpArtifactsDirectoryPath: String
     abstract var setCompilerFlags: (compilerFlags: List<String>) -> Unit
+
+    var bcInputFileName: String = "out.bc"
+    var llOutputFileName: String = "bitcode.ll"
 }

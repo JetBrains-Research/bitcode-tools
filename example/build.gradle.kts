@@ -72,4 +72,5 @@ decompileBitcodeConfig {
         }
         println("[example] following compiler flags are set: $compilerFlags")
     }
+    llOutputFileName = "example-bitcode.ll"
 }
