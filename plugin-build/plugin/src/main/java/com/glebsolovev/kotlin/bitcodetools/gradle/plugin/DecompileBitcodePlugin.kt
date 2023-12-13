@@ -17,13 +17,13 @@ private fun String.validateExtension(expectedExt: String): Boolean {
 
 abstract class DecompileBitcodePlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val extension = project.extensions.create(EXTENSION_NAME, DecompileBitcodeExtension::class.java, project)
+        val extension = project.extensions.create<DecompileBitcodeExtension>(EXTENSION_NAME, project)
 
         // TODO: refactor and split into functions
         project.afterEvaluate {
             val linkTask = project.tasks.named(extension.linkTaskName)
             val tmpArtifactsDirectory = project.layout.projectDirectory.dir(extension.tmpArtifactsDirectoryPath)
-            
+
             val bcInputFileName = extension.bcInputFileName
             if(!bcInputFileName.validateExtension("bc")) {
                 throw GradleException("`bcInputFileName` should have `.bc` extension")
@@ -35,11 +35,8 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
 
             linkTask {
                 outputs.dir(tmpArtifactsDirectory)
-                // TODO?: check whether it overrides original outputs or just adds a new one
-                // in the former (worst) case a new task with dependance on `linkTask` should be created
             }
-            // project.tasks.register<DecompileBitcodeTask>("decompileBitcode") {
-            project.tasks.register(TASK_NAME, DecompileBitcodeTask::class.java) {
+            project.tasks.register<DecompileBitcodeTask>(TASK_NAME) {
                 dependsOn(linkTask)
                 inputFile.set(tmpArtifactsDirectory.file(bcInputFileName))
                 outputFile.set(tmpArtifactsDirectory.file(llOutputFileName))

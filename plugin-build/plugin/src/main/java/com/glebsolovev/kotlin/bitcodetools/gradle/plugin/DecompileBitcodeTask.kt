@@ -28,6 +28,6 @@ abstract class DecompileBitcodeTask : DefaultTask() {
             executable = "sh"
             args = listOf("-c", "llvm-dis -o ${llFile.absolutePath} ${bcFile.absolutePath}")
         }
-        logger.lifecycle("Bitcode has been successfully decompiled into ${bcFile.absolutePath}.")
+        logger.lifecycle("Bitcode has been successfully decompiled into ${llFile.absolutePath}.")
     }
 }
