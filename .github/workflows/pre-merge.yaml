@@ -37,5 +37,5 @@ jobs:
 
         # check that it has produced a bitcode file
       - name: Verify the plugin output
-        run: test -f example/build/bitcode/bitcode.ll
+        run: test -f example/build/bitcode/example-bitcode.ll
         if: success()
