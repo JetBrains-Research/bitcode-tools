@@ -31,6 +31,6 @@ gradleEnterprise {
     }
 }
 
-rootProject.name = ("com.ncorti.kotlin.gradle.template")
+rootProject.name = ("com.glebsolovev.kotlin.bitcodetools.gradle")
 
 include(":plugin")

@@ -12,7 +12,7 @@ jobs:
   gradle:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ ubuntu-latest, macos-latest ]
     runs-on: ${{ matrix.os }}
     env:
       GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
@@ -25,12 +25,17 @@ jobs:
         uses: gradle/gradle-build-action@v2
       - name: Run Gradle tasks
         run: ./gradlew preMerge --continue
+      - name: Set up LLVM for `llvm-dis` tool
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: '14.0'
 
-        # We do a run of the new task `templateExample` created by the plugin
+        # run the `:example:decompileBitcode` task created by the plugin
       - name: Run the plugin
-        run: ./gradlew templateExample --message="Test Run" --tag=CI
+        run: ./gradlew :example:decompileBitcode
         if: success()
-        # And we verify that the output of the file is correct.
+
+        # check that it has produced a bitcode file
       - name: Verify the plugin output
-        run: grep -Fxq "[CI] Test Run" ./example/build/template-example.txt
+        run: test -f example/build/bitcode/example-bitcode.ll
         if: success()
