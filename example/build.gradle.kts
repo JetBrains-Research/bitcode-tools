@@ -74,3 +74,9 @@ decompileBitcodeConfig {
     }
     llOutputFileName = "example-bitcode.ll"
 }
+
+extractFromDecompiledBitcodeConfig {
+    functionToExtractName = "kfun:#main(){}"
+    recursionDepth = 1u
+    outputFileName = "custom-extracted-bitcode.ll"
+}

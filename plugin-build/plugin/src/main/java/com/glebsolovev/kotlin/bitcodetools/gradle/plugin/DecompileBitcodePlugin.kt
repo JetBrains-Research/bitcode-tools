@@ -9,30 +9,47 @@ import org.gradle.kotlin.dsl.*
 import java.io.File
 import java.nio.file.Files.createDirectories
 
+// TODO: rename to BitcodeAnalysisPlugin
 abstract class DecompileBitcodePlugin : Plugin<Project> {
 
     companion object {
-        private const val EXTENSION_NAME = "decompileBitcodeConfig"
-        private const val TASK_NAME = "decompileBitcode"
+        private const val DECOMPILE_BITCODE_EXTENSION_NAME = "decompileBitcodeConfig"
+        private const val EXTRACT_BITCODE_EXTENSION_NAME = "extractFromDecompiledBitcodeConfig"
+        private const val DECOMPILE_BITCODE_TASK_NAME = "decompileBitcode"
+        private const val EXTRACT_BITCODE_TASK_NAME = "extractBitcode"
+        const val GROUP_NAME = "bitcode analysis"
     }
 
     override fun apply(project: Project) {
-        val extension = project.extensions.create<DecompileBitcodeExtension>(EXTENSION_NAME, project)
+        val decompileBitcodeExtension = project.extensions.create<DecompileBitcodeExtension>(DECOMPILE_BITCODE_EXTENSION_NAME, project)
+        val extractBitcodeExtension = project.extensions.create<ExtractBitcodeExtension>(EXTRACT_BITCODE_EXTENSION_NAME, project)
 
         project.afterEvaluate {
-            val resolvedFiles = extension.resolveFiles(project)
+            val resolvedFiles = decompileBitcodeExtension.resolveFiles(project)
             configureDecompileBitcodeTask(
                 project,
-                decompileBitcodeTaskName = TASK_NAME,
-                linkTaskName = extension.linkTaskName,
+                decompileBitcodeTaskName = DECOMPILE_BITCODE_TASK_NAME,
+                linkTaskName = decompileBitcodeExtension.linkTaskName,
                 resolvedFiles = resolvedFiles
             )
             configureCompilerToProduceTmpFiles(
                 project,
-                decompileBitcodeTaskNames = listOf(TASK_NAME),
+                decompileBitcodeTaskNames = listOf(DECOMPILE_BITCODE_TASK_NAME),
                 tmpArtifactsDirectory = resolvedFiles.tmpArtifactsDirectory,
-                setCompilerFlags = extension.setCompilerFlags
+                setCompilerFlags = decompileBitcodeExtension.setCompilerFlags
             )
+
+            // NEW DRAFT BLOCK
+            // TODO: add if extension is set block
+            val (tmpArtifactsDirectory, _, llOutputFilePath) = resolvedFiles
+            val extractedFile = tmpArtifactsDirectory.file(extractBitcodeExtension.outputFileName).toRelativePath(project)
+            project.tasks.register<ExtractBitcodeTask>(EXTRACT_BITCODE_TASK_NAME) {
+                dependsOn(DECOMPILE_BITCODE_TASK_NAME)
+                inputFilePath.convention(llOutputFilePath)
+                outputFilePath.convention(extractedFile)
+                functionToExtractName.set(extractBitcodeExtension.functionToExtractName)
+                recursionDepth.set(extractBitcodeExtension.recursionDepth.toString())
+            }
         }
     }
 

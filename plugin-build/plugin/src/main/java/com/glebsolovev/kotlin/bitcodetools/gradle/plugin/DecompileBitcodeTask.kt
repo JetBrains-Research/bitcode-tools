@@ -15,7 +15,7 @@ abstract class DecompileBitcodeTask @Inject constructor(project: Project) : Defa
 
     init {
         description = "Decompiles a bitcode `.bc` file into a human-readable `.ll` one."
-        group = "bitcode analysis"
+        group = DecompileBitcodePlugin.GROUP_NAME
     }
 
     private val objects = project.objects
