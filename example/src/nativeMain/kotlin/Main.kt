@@ -18,7 +18,7 @@ fun doNewYearCleanUp(
     bookShelf: BookShelf,
     todoList: List<Task>,
     christmasTree: ChristmasTree,
-    friends: List<Friend>
+    friends: List<Friend>,
 ) {
     bookShelf.books.sortWith(compareBy<Book> { it.author }.thenBy { it.name })
     todoList.forEach { task ->
