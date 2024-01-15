@@ -24,6 +24,11 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     companion object {
         private const val EXTRACT_BITCODE_SCRIPT_PATH = "/extract-bitcode.py"
+        private const val NO_FUNCTIONS_TO_EXTRACT_ERROR_MESSAGE = "No functions to extract!\n${
+            ""
+        }Please, provide their names via the CLI `function` parameter or ${
+            ""
+        }`functionToExtractName` field during Gradle configuration."
     }
 
     @get:Internal
@@ -69,6 +74,11 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     @TaskAction
     fun produce() {
+        if (!functionToExtractName.isPresent) {
+            logger.lifecycle(NO_FUNCTIONS_TO_EXTRACT_ERROR_MESSAGE)
+            return
+        }
+
         val scriptFileContent =
             object {}.javaClass.getResource(EXTRACT_BITCODE_SCRIPT_PATH)?.readText() ?: error("unexpected")
 
@@ -78,6 +88,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         val inputFilePath = inputFile.get().asFile.absolutePath
         val outputFilePath = outputFile.get().asFile.absolutePath
         // TODO: check arguments (?)
+        // TODO: quote bash args
         project.exec {
             executable = "sh"
             args = listOf(

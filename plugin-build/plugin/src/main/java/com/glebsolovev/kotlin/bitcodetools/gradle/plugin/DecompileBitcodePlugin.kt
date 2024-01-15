@@ -21,8 +21,10 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
     }
 
     override fun apply(project: Project) {
-        val decompileBitcodeExtension = project.extensions.create<DecompileBitcodeExtension>(DECOMPILE_BITCODE_EXTENSION_NAME, project)
-        val extractBitcodeExtension = project.extensions.create<ExtractBitcodeExtension>(EXTRACT_BITCODE_EXTENSION_NAME, project)
+        val decompileBitcodeExtension =
+            project.extensions.create<DecompileBitcodeExtension>(DECOMPILE_BITCODE_EXTENSION_NAME, project)
+        val extractBitcodeExtension =
+            project.extensions.create<ExtractBitcodeExtension>(EXTRACT_BITCODE_EXTENSION_NAME, project)
 
         project.afterEvaluate {
             val resolvedFiles = decompileBitcodeExtension.resolveFiles(project)
@@ -39,16 +41,26 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
                 setCompilerFlags = decompileBitcodeExtension.setCompilerFlags
             )
 
-            // NEW DRAFT BLOCK
-            // TODO: add if extension is set block
             val (tmpArtifactsDirectory, _, llOutputFilePath) = resolvedFiles
-            val extractedFile = tmpArtifactsDirectory.file(extractBitcodeExtension.outputFileName).toRelativePath(project)
+            val extractedFile =
+                tmpArtifactsDirectory.file(extractBitcodeExtension.outputFileName).toRelativePath(project)
             project.tasks.register<ExtractBitcodeTask>(EXTRACT_BITCODE_TASK_NAME) {
                 dependsOn(DECOMPILE_BITCODE_TASK_NAME)
                 inputFilePath.convention(llOutputFilePath)
                 outputFilePath.convention(extractedFile)
                 functionToExtractName.set(extractBitcodeExtension.functionToExtractName)
                 recursionDepth.set(extractBitcodeExtension.recursionDepth.toString())
+                doFirst {
+                    if (inputFilePath.orNull != llOutputFilePath) {
+                        throw GradleException(
+                            "`input` file of the `$EXTRACT_BITCODE_TASK_NAME` should be an output file of the `$DECOMPILE_BITCODE_TASK_NAME` task ${
+                                ""
+                            }to maintain the reasonable bitcode-analysis pipeline for the project. ${
+                                ""
+                            }If you still would like to overcome this behaviour, register a custom `ExtractBitcodeTask` task and run it instead."
+                        )
+                    }
+                }
             }
         }
     }

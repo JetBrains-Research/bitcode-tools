@@ -1,3 +1,5 @@
+import com.glebsolovev.kotlin.bitcodetools.gradle.plugin.DecompileBitcodeTask
+
 plugins {
     kotlin("multiplatform")
     id("com.glebsolovev.kotlin.bitcodetools.gradle.plugin")
@@ -51,6 +53,7 @@ kotlin {
     }
 }
 
+// по возможности все дефолтное
 decompileBitcodeConfig {
     val hostOs: String = System.getProperty("os.name")
     val arch: String = System.getProperty("os.arch")
