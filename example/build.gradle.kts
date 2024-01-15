@@ -76,6 +76,5 @@ decompileBitcodeConfig {
 }
 
 extractFromDecompiledBitcodeConfig {
-    functionToExtractName = "kfun:#main(){}"
     recursionDepth = 1u
 }

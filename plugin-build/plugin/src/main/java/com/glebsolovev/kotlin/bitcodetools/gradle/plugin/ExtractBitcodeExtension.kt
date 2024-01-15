@@ -9,7 +9,7 @@ abstract class ExtractBitcodeExtension @Inject constructor(project: Project) {
     @Suppress("unused") // required to initialize properties of type Property<*> correctly
     private val objects = project.objects
 
-    var functionToExtractName: String? = null
+    var functionToExtractName: String = "kfun:#main(){}"
     var recursionDepth: UInt = 0u
     var outputFileName: String = "extracted-bitcode.ll"
 }

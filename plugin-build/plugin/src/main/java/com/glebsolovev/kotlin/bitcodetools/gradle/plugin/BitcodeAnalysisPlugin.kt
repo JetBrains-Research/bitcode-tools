@@ -5,7 +5,6 @@ import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.kotlin.dsl.*
-import java.io.File
 import java.nio.file.Files.createDirectories
 
 abstract class BitcodeAnalysisPlugin : Plugin<Project> {
@@ -127,22 +126,11 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
 
     private fun DecompileBitcodeExtension.resolveFiles(project: Project): ResolvedBitcodeFiles {
         val tmpArtifactsDirectory = project.layout.projectDirectory.dir(tmpArtifactsDirectoryPath)
-        if (!bcInputFileName.validateExtension("bc")) {
-            throw BitcodeAnalysisException("`bcInputFileName` should have `.bc` extension")
-        }
-        if (!llOutputFileName.validateExtension("ll")) {
-            throw BitcodeAnalysisException("`llOutputFileName` should have `.ll` extension")
-        }
         return ResolvedBitcodeFiles(
             tmpArtifactsDirectory,
             project.resolveToRelativePath(tmpArtifactsDirectory, bcInputFileName),
             project.resolveToRelativePath(tmpArtifactsDirectory, llOutputFileName)
         )
-    }
-
-    private fun String.validateExtension(expectedExt: String): Boolean {
-        val actualExt = File(this).extension
-        return actualExt == expectedExt
     }
 
     private fun Project.resolveToRelativePath(directory: Directory, fileName: String) =

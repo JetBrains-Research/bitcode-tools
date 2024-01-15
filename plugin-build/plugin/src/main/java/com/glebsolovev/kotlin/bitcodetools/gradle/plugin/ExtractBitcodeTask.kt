@@ -25,11 +25,6 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     companion object {
         private const val EXTRACT_BITCODE_SCRIPT_PATH = "/extract-bitcode.py"
-        private const val NO_FUNCTIONS_TO_EXTRACT_ERROR_MESSAGE = "No functions to extract!\n${
-        ""
-        }Please, provide their names via the CLI `function` parameter or ${
-        ""
-        }`functionToExtractName` field during Gradle configuration."
     }
 
     @get:Internal
@@ -88,20 +83,19 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     @TaskAction
     fun produce() {
-        if (!functionToExtractName.isPresent) {
-            logger.lifecycle(NO_FUNCTIONS_TO_EXTRACT_ERROR_MESSAGE)
-            return
+        if (actualRecursionDepthAsString.get().toUIntOrNull() == null) {
+            throw BitcodeAnalysisException("`recursionDepth` must be a non-negative integer")
         }
         val scriptTmpFilePath = extractScriptIntoTmpFile().toAbsolutePath()
         val inputFilePath = actualInputFile.get().asFile.absolutePath
         val outputFilePath = actualOutputFile.get().asFile.absolutePath
-        // TODO: check arguments (?)
+
         project.exec {
             executable = "sh"
             args = listOf(
                 "-c",
                 """
-                    python3 -i "$scriptTmpFilePath" ${
+                    python3 "$scriptTmpFilePath" ${
                 ""
                 }--input "$inputFilePath" --output "$outputFilePath" ${
                 ""
@@ -111,7 +105,6 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
                 """.trimIndent()
             )
         }
-        // TODO: enable errors appear from script
         logger.lifecycle("Specified elements have been successfully extracted into $outputFilePath.")
     }
 }
