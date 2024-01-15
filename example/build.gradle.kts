@@ -83,3 +83,8 @@ extractFromDecompiledBitcodeConfig {
     recursionDepth = 1u
     outputFileName = "custom-extracted-bitcode.ll"
 }
+
+tasks.extractSomeBitcode {
+    functionToExtractName = "kfun:#main(){}"
+    recursionDepth = "1"
+}

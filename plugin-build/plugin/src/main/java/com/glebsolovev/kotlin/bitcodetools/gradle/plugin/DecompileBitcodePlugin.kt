@@ -14,9 +14,13 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
 
     companion object {
         private const val DECOMPILE_BITCODE_EXTENSION_NAME = "decompileBitcodeConfig"
+        private const val DECOMPILE_BITCODE_PIPELINE_TASK_NAME = "decompileBitcode"
+        private const val DECOMPILE_BITCODE_STANDALONE_TASK_NAME = "decompileSomeBitcode"
+
         private const val EXTRACT_BITCODE_EXTENSION_NAME = "extractFromDecompiledBitcodeConfig"
-        private const val DECOMPILE_BITCODE_TASK_NAME = "decompileBitcode"
-        private const val EXTRACT_BITCODE_TASK_NAME = "extractBitcode"
+        private const val EXTRACT_BITCODE_PIPELINE_TASK_NAME = "extractBitcode"
+        private const val EXTRACT_BITCODE_STANDALONE_TASK_NAME = "extractSomeBitcode"
+
         const val GROUP_NAME = "bitcode analysis"
     }
 
@@ -26,17 +30,20 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
         val extractBitcodeExtension =
             project.extensions.create<ExtractBitcodeExtension>(EXTRACT_BITCODE_EXTENSION_NAME, project)
 
+        project.tasks.register<DecompileBitcodeTask>(DECOMPILE_BITCODE_STANDALONE_TASK_NAME) {}
+        project.tasks.register<ExtractBitcodeTask>(EXTRACT_BITCODE_STANDALONE_TASK_NAME) {}
+
         project.afterEvaluate {
             val resolvedFiles = decompileBitcodeExtension.resolveFiles(project)
             configureDecompileBitcodeTask(
                 project,
-                decompileBitcodeTaskName = DECOMPILE_BITCODE_TASK_NAME,
+                decompileBitcodeTaskName = DECOMPILE_BITCODE_PIPELINE_TASK_NAME,
                 linkTaskName = decompileBitcodeExtension.linkTaskName,
                 resolvedFiles = resolvedFiles
             )
             configureCompilerToProduceTmpFiles(
                 project,
-                decompileBitcodeTaskNames = listOf(DECOMPILE_BITCODE_TASK_NAME),
+                decompileBitcodeTaskNames = listOf(DECOMPILE_BITCODE_PIPELINE_TASK_NAME),
                 tmpArtifactsDirectory = resolvedFiles.tmpArtifactsDirectory,
                 setCompilerFlags = decompileBitcodeExtension.setCompilerFlags
             )
@@ -44,8 +51,8 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
             val (tmpArtifactsDirectory, _, llOutputFilePath) = resolvedFiles
             val extractedFile =
                 tmpArtifactsDirectory.file(extractBitcodeExtension.outputFileName).toRelativePath(project)
-            project.tasks.register<ExtractBitcodeTask>(EXTRACT_BITCODE_TASK_NAME) {
-                dependsOn(DECOMPILE_BITCODE_TASK_NAME)
+            project.tasks.register<ExtractBitcodeTask>(EXTRACT_BITCODE_PIPELINE_TASK_NAME) {
+                dependsOn(DECOMPILE_BITCODE_PIPELINE_TASK_NAME)
                 inputFilePath.convention(llOutputFilePath)
                 outputFilePath.convention(extractedFile)
                 functionToExtractName.set(extractBitcodeExtension.functionToExtractName)
@@ -53,7 +60,7 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
                 doFirst {
                     if (inputFilePath.orNull != llOutputFilePath) {
                         throw GradleException(
-                            "`input` file of the `$EXTRACT_BITCODE_TASK_NAME` should be an output file of the `$DECOMPILE_BITCODE_TASK_NAME` task ${
+                            "`input` file of the `$EXTRACT_BITCODE_PIPELINE_TASK_NAME` should be an output file of the `$DECOMPILE_BITCODE_PIPELINE_TASK_NAME` task ${
                                 ""
                             }to maintain the reasonable bitcode-analysis pipeline for the project. ${
                                 ""
