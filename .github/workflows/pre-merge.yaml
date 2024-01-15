@@ -23,39 +23,46 @@ jobs:
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - name: Cache Gradle Caches
         uses: gradle/gradle-build-action@v2
-      - name: Run Gradle tasks
-        run: ./gradlew preMerge --continue
+
+      # Set up necessary dependencies
       - name: Set up LLVM for `llvm-dis` tool
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: '14.0'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install llvmlite
 
-        # run the `:example:decompileBitcode` task created by the plugin
+        # Run all linters and unit tests
+      - name: Run Gradle tasks
+        run: ./gradlew preMerge --continue
+
+        # Test `:example:decompileBitcode` task
       - name: Run `decompileBitcode` task
         run: ./gradlew :example:decompileBitcode --output "build/bitcode/bitcode.ll"
         if: success()
-
-        # check that it has produced a bitcode file
       - name: Verify `decompileBitcode` output
         run: test -f example/build/bitcode/bitcode.ll
         if: success()
 
-        # run the `:example:decompileBitcode` task created by the plugin
+        # Test `:example:extractBitcode` task
       - name: Run `extractBitcode` task
         run: ./gradlew :example:extractBitcode --function 'kfun:#main(){}' --output "build/bitcode/main-bitcode.ll"
         if: success()
-
-        # check that it has produced a bitcode file
       - name: Verify `extractBitcode` output
         run: test -f example/build/bitcode/main-bitcode.ll
         if: success()
 
-        # run the `:example:extractSomeBitcode` task created by the plugin
+        # Test `:example:extractSomeBitcode` task
       - name: Run standalone `extractSomeBitcode` task
         run: ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --input "build/bitcode/bitcode.ll" --output "build/bitcode/main-bitcode-by-standalone.ll"
         if: success()
-
-        # check that it has produced a bitcode file
       - name: Verify `extractSomeBitcode` output
         run: test -f example/build/bitcode/main-bitcode-by-standalone.ll
         if: success()
