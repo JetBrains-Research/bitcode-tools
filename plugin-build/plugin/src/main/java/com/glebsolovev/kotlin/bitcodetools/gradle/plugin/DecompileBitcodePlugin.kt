@@ -56,7 +56,7 @@ abstract class DecompileBitcodePlugin : Plugin<Project> {
                 inputFilePath.convention(llOutputFilePath)
                 outputFilePath.convention(extractedFile)
                 functionToExtractName.set(extractBitcodeExtension.functionToExtractName)
-                recursionDepth.set(extractBitcodeExtension.recursionDepth.toString())
+                recursionDepth = extractBitcodeExtension.recursionDepth
                 doFirst {
                     if (inputFilePath.orNull != llOutputFilePath) {
                         throw GradleException(

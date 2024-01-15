@@ -45,6 +45,9 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     )
     val outputFilePath: Property<String> = objects.property(String::class.java)
 
+    @get:Internal
+    var recursionDepth: UInt = 0u
+
     @get:Input
     @get:Option(
         option = "function",
@@ -60,7 +63,8 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
             "up to the specified depth relative to `functionToExtractName`. " +
             "Default depth is 0, meaning recursive extraction is disabled."
     )
-    val recursionDepth: Property<String> = objects.property(String::class.java).convention("0")
+    protected val actualRecursionDepthAsString: Property<String> =
+        objects.property(String::class.java).convention(recursionDepth.toString())
 
     @get:InputFile
     val inputFile: RegularFileProperty = objects.fileProperty().value(
@@ -100,7 +104,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
                     ""
                 }--function '${functionToExtractName.get()}' ${
                     ""
-                }--recursive ${recursionDepth.get()}
+                }--recursive ${actualRecursionDepthAsString.get()}
                 """.trimIndent()
             )
         }

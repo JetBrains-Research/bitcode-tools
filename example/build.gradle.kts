@@ -1,5 +1,3 @@
-import com.glebsolovev.kotlin.bitcodetools.gradle.plugin.DecompileBitcodeTask
-
 plugins {
     kotlin("multiplatform")
     id("com.glebsolovev.kotlin.bitcodetools.gradle.plugin")
@@ -86,5 +84,5 @@ extractFromDecompiledBitcodeConfig {
 
 tasks.extractSomeBitcode {
     functionToExtractName = "kfun:#main(){}"
-    recursionDepth = "1"
+    recursionDepth = 0u
 }
