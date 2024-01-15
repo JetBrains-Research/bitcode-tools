@@ -15,7 +15,7 @@ abstract class DecompileBitcodeTask @Inject constructor(project: Project) : Defa
 
     init {
         description = "Decompiles a bitcode `.bc` file into a human-readable `.ll` one."
-        group = DecompileBitcodePlugin.GROUP_NAME
+        group = BitcodeAnalysisPlugin.GROUP_NAME
     }
 
     private val objects = project.objects
@@ -35,23 +35,23 @@ abstract class DecompileBitcodeTask @Inject constructor(project: Project) : Defa
     val outputFilePath: Property<String> = objects.property(String::class.java)
 
     @get:InputFile
-    val inputFile: RegularFileProperty = objects.fileProperty().value(
+    val actualInputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(inputFilePath)
     )
 
     @get:OutputFile
-    val outputFile: RegularFileProperty = objects.fileProperty().value(
+    val actualOutputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(outputFilePath)
     )
 
     @TaskAction
     fun produce() {
-        val bcFile = inputFile.get().asFile
-        val llFile = outputFile.get().asFile
+        val bcFilePath = actualInputFile.get().asFile.absolutePath
+        val llFilePath = actualOutputFile.get().asFile.absolutePath
         project.exec {
             executable = "sh"
-            args = listOf("-c", "llvm-dis -o ${llFile.absolutePath} ${bcFile.absolutePath}")
+            args = listOf("-c", "llvm-dis -o $llFilePath $bcFilePath")
         }
-        logger.lifecycle("Bitcode has been successfully decompiled into ${llFile.absolutePath}.")
+        logger.lifecycle("Bitcode has been successfully decompiled into $llFilePath.")
     }
 }

@@ -51,7 +51,6 @@ kotlin {
     }
 }
 
-// по возможности все дефолтное
 decompileBitcodeConfig {
     val hostOs: String = System.getProperty("os.name")
     val arch: String = System.getProperty("os.arch")
@@ -79,10 +78,4 @@ decompileBitcodeConfig {
 extractFromDecompiledBitcodeConfig {
     functionToExtractName = "kfun:#main(){}"
     recursionDepth = 1u
-    outputFileName = "custom-extracted-bitcode.ll"
-}
-
-tasks.extractSomeBitcode {
-    functionToExtractName = "kfun:#main(){}"
-    recursionDepth = 0u
 }

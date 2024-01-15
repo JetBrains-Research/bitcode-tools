@@ -6,7 +6,7 @@ import javax.inject.Inject
 @Suppress("UnnecessaryAbstractClass")
 abstract class ExtractBitcodeExtension @Inject constructor(project: Project) {
 
-    // required to initialize properties of type Property<*> correctly
+    @Suppress("unused") // required to initialize properties of type Property<*> correctly
     private val objects = project.objects
 
     var functionToExtractName: String? = null

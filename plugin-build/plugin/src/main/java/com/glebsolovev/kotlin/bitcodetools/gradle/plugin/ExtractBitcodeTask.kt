@@ -10,6 +10,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.options.Option
+import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.io.path.writeText
 
@@ -17,7 +18,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     init {
         description = "Extracts the specified elements from a bitcode `.ll` file effectively."
-        group = DecompileBitcodePlugin.GROUP_NAME
+        group = BitcodeAnalysisPlugin.GROUP_NAME
     }
 
     private val objects = project.objects
@@ -25,9 +26,9 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     companion object {
         private const val EXTRACT_BITCODE_SCRIPT_PATH = "/extract-bitcode.py"
         private const val NO_FUNCTIONS_TO_EXTRACT_ERROR_MESSAGE = "No functions to extract!\n${
-            ""
+        ""
         }Please, provide their names via the CLI `function` parameter or ${
-            ""
+        ""
         }`functionToExtractName` field during Gradle configuration."
     }
 
@@ -67,14 +68,23 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         objects.property(String::class.java).convention(recursionDepth.toString())
 
     @get:InputFile
-    val inputFile: RegularFileProperty = objects.fileProperty().value(
+    val actualInputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(inputFilePath)
     )
 
     @get:OutputFile
-    val outputFile: RegularFileProperty = objects.fileProperty().value(
+    val actualOutputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(outputFilePath)
     )
+
+    private fun extractScriptIntoTmpFile(): Path {
+        val scriptFileContent =
+            object {}.javaClass.getResource(EXTRACT_BITCODE_SCRIPT_PATH)?.readText()
+                ?: error("Failed to find and read `$EXTRACT_BITCODE_SCRIPT_PATH` resource")
+        return kotlin.io.path.createTempFile(prefix = "extract-bitcode", suffix = ".py").apply {
+            writeText(scriptFileContent)
+        }
+    }
 
     @TaskAction
     fun produce() {
@@ -82,33 +92,26 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
             logger.lifecycle(NO_FUNCTIONS_TO_EXTRACT_ERROR_MESSAGE)
             return
         }
-
-        val scriptFileContent =
-            object {}.javaClass.getResource(EXTRACT_BITCODE_SCRIPT_PATH)?.readText() ?: error("unexpected")
-
-        val scriptTmpFile = kotlin.io.path.createTempFile(prefix = "extract-bitcode", suffix = ".py")
-        scriptTmpFile.writeText(scriptFileContent)
-
-        val inputFilePath = inputFile.get().asFile.absolutePath
-        val outputFilePath = outputFile.get().asFile.absolutePath
+        val scriptTmpFilePath = extractScriptIntoTmpFile().toAbsolutePath()
+        val inputFilePath = actualInputFile.get().asFile.absolutePath
+        val outputFilePath = actualOutputFile.get().asFile.absolutePath
         // TODO: check arguments (?)
-        // TODO: quote bash args
         project.exec {
             executable = "sh"
             args = listOf(
                 "-c",
                 """
-                    python3 -i "${scriptTmpFile.toAbsolutePath()}" ${
-                    ""
-                }--input $inputFilePath --output $outputFilePath ${
-                    ""
+                    python3 -i "$scriptTmpFilePath" ${
+                ""
+                }--input "$inputFilePath" --output "$outputFilePath" ${
+                ""
                 }--function '${functionToExtractName.get()}' ${
-                    ""
-                }--recursive ${actualRecursionDepthAsString.get()}
+                ""
+                }--recursive "${actualRecursionDepthAsString.get()}"
                 """.trimIndent()
             )
         }
-        // TODO: handle errors from script
+        // TODO: enable errors appear from script
         logger.lifecycle("Specified elements have been successfully extracted into $outputFilePath.")
     }
 }
