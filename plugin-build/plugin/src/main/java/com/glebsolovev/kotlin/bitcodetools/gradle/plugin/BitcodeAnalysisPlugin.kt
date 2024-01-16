@@ -123,14 +123,20 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
         project: Project,
         setCompilerFlags: (compilerFlags: List<String>) -> Unit,
     ) {
-        val shouldProduceBitcode = project.gradle.startParameter.taskNames.any { taskName ->
-            pipelineTaskNames.any { taskName.contains(it) }
+        val pipelineTaskPaths = pipelineTaskNames.map { taskName ->
+            project.tasks.findByPath(taskName)?.path
+                ?: error("pipeline tasks should be already registered at this point")
         }
-        if (shouldProduceBitcode) {
-            createDirectories(bitcodeSourcesDirectory.asFile.toPath())
-            val compilerFlags = listOf("-Xtemporary-files-dir=${bitcodeSourcesDirectory.asFile.absolutePath}")
-            setCompilerFlags(compilerFlags)
-        }
+        project.gradle.addListener(object : TaskExecutionGraphListener {
+            override fun graphPopulated(graph: TaskExecutionGraph) {
+                val shouldProduceBitcode = pipelineTaskPaths.any { graph.hasTask(it) }
+                if (shouldProduceBitcode) {
+                    createDirectories(bitcodeSourcesDirectory.asFile.toPath())
+                    val compilerFlags = listOf("-Xtemporary-files-dir=${bitcodeSourcesDirectory.asFile.absolutePath}")
+                    setCompilerFlags(compilerFlags)
+                }
+            }
+        })
     }
 
     private fun Project.resolveReleasePipelineParameters(
