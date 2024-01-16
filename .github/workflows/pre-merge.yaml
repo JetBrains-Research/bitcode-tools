@@ -24,7 +24,6 @@ jobs:
       - name: Cache Gradle Caches
         uses: gradle/gradle-build-action@v2
 
-      # Set up necessary dependencies
       - name: Set up LLVM for `llvm-dis` tool
         uses: KyleMayes/install-llvm-action@v1
         with:
@@ -37,30 +36,29 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-        # Run all linters and unit tests
       - name: Run Gradle verification tasks
         run: ./gradlew preMerge --continue
 
-        # Test `:example:decompileBitcode` task
-      - name: Run `decompileBitcode` task
-        run: ./gradlew :example:decompileBitcode --output "build/bitcode/bitcode.ll"
-        if: success()
-      - name: Verify `decompileBitcode` output
-        run: test -f example/build/bitcode/bitcode.ll
+      - name: Test `decompileBitcode` task
+        run: |
+          ./gradlew :example:decompileBitcode --output "build/bitcode/bitcode.ll"
+          test -f example/build/bitcode/bitcode.ll
         if: success()
 
-        # Test `:example:extractBitcode` task
-      - name: Run `extractBitcode` task
-        run: ./gradlew :example:extractBitcode --function 'kfun:#main(){}' --output "build/bitcode/main-bitcode.ll"
-        if: success()
-      - name: Verify `extractBitcode` output
-        run: test -f example/build/bitcode/main-bitcode.ll
+      - name: Test `extractBitcode` task
+        run: |
+          ./gradlew :example:extractBitcode --function 'kfun:#main(){}' --output "build/bitcode/main-bitcode.ll"
+          test -f example/build/bitcode/main-bitcode.ll
         if: success()
 
-        # Test `:example:extractSomeBitcode` task
-      - name: Run standalone `extractSomeBitcode` task
-        run: ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --input "build/bitcode/bitcode.ll" --output "build/bitcode/main-bitcode-by-standalone.ll"
+      - name: Test debug `extractBitcodeDebug` task
+        run: |
+          ./gradlew :example:extractBitcodeDebug --function 'kfun:#main(){}' --output "build/bitcode/main-bitcode-debug.ll"
+          test -f example/build/bitcode/main-bitcode-debug.ll
         if: success()
-      - name: Verify `extractSomeBitcode` output
-        run: test -f example/build/bitcode/main-bitcode-by-standalone.ll
+
+      - name: Test standalone `extractSomeBitcode` task
+        run: |
+          ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --input "build/bitcode/bitcode.ll" --output "build/bitcode/main-bitcode-by-standalone.ll"
+          test -f example/build/bitcode/main-bitcode-by-standalone.ll
         if: success()

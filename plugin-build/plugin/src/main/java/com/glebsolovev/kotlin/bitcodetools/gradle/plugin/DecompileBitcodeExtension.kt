@@ -14,4 +14,7 @@ abstract class DecompileBitcodeExtension @Inject constructor(project: Project) {
 
     var bcInputFileName: String = "out.bc"
     var llOutputFileName: String = "bitcode.ll"
+
+    var linkDebugTaskName: String? = null
+    var llDebugOutputFileName: String = "bitcode-debug.ll"
 }
