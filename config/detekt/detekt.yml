@@ -173,7 +173,7 @@ complexity:
     thresholdInObjects: 11
     thresholdInEnums: 11
     ignoreDeprecated: false
-    ignorePrivate: false
+    ignorePrivate: true # use many private functions to split long ones, it's okay
     ignoreOverridden: false
 
 coroutines:

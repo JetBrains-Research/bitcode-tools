@@ -26,11 +26,11 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
 
         private const val PIPELINE_VIOLATION_ERROR_MESSAGE =
             "`input` file of the `$RELEASE_EXTRACT_BITCODE_TASK_NAME` should be an output file of the `$RELEASE_DECOMPILE_BITCODE_TASK_NAME` task ${
-                ""
+            ""
             }to maintain the reasonable bitcode-analysis pipeline for the project. ${
-                ""
+            ""
             }If you still would like to overcome this behaviour, ${
-                ""
+            ""
             }register a custom `ExtractBitcodeTask` task and run it instead."
 
         const val GROUP_NAME = "bitcode analysis"
@@ -57,7 +57,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
                     project,
                     extractBitcodeTaskParameters = ExtractBitcodeTaskParameters(
                         functionToExtractName = extractBitcodeExtension.functionToExtractName,
-                        recursionDepth = extractBitcodeExtension.recursionDepth,
+                        recursionDepth = extractBitcodeExtension.recursionDepth
                     ),
                     setCompilerFlags = decompileBitcodeExtension.setCompilerFlags
                 )
@@ -155,7 +155,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             extractedBitcodeFilePath = resolveToRelativePath(
                 tmpArtifactsDirectory,
                 extractBitcodeExtension.outputFileName
-            ),
+            )
         )
     }
 
@@ -176,7 +176,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             extractedBitcodeFilePath = resolveToRelativePath(
                 tmpArtifactsDirectory,
                 extractBitcodeExtension.debugOutputFileName
-            ),
+            )
         )
     }
 
