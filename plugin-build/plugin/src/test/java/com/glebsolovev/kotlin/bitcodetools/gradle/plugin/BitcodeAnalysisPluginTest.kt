@@ -2,7 +2,7 @@ package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
 
 import org.junit.Test
 
-class DecompileBitcodePluginTest {
+class BitcodeAnalysisPluginTest {
     @Test
     fun passTest() {}
 }

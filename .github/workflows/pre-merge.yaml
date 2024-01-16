@@ -23,19 +23,42 @@ jobs:
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
       - name: Cache Gradle Caches
         uses: gradle/gradle-build-action@v2
-      - name: Run Gradle tasks
-        run: ./gradlew preMerge --continue
+
       - name: Set up LLVM for `llvm-dis` tool
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: '14.0'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
 
-        # run the `:example:decompileBitcode` task created by the plugin
-      - name: Run the plugin
-        run: ./gradlew :example:decompileBitcode
+      - name: Run Gradle verification tasks
+        run: ./gradlew preMerge --continue
+
+      - name: Test `decompileBitcode` task
+        run: |
+          ./gradlew :example:decompileBitcode --output "build/bitcode/bitcode.ll"
+          test -f example/build/bitcode/bitcode.ll
         if: success()
 
-        # check that it has produced a bitcode file
-      - name: Verify the plugin output
-        run: test -f example/build/bitcode/example-bitcode.ll
+      - name: Test `extractBitcode` task
+        run: |
+          ./gradlew :example:extractBitcode --function 'kfun:#main(){}' --output "build/bitcode/main-bitcode.ll"
+          test -f example/build/bitcode/main-bitcode.ll
+        if: success()
+
+      - name: Test debug `extractBitcodeDebug` task
+        run: |
+          ./gradlew :example:extractBitcodeDebug --function 'kfun:#main(){}' --output "build/bitcode/main-bitcode-debug.ll"
+          test -f example/build/bitcode/main-bitcode-debug.ll
+        if: success()
+
+      - name: Test standalone `extractSomeBitcode` task
+        run: |
+          ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --input "build/bitcode/bitcode.ll" --output "build/bitcode/main-bitcode-by-standalone.ll"
+          test -f example/build/bitcode/main-bitcode-by-standalone.ll
         if: success()

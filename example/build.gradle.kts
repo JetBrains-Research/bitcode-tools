@@ -61,6 +61,7 @@ decompileBitcodeConfig {
         hostOs.startsWith("Windows") -> throw GradleException("Windows is currently unsupported: unable to install `llvm-dis` tool")
         else -> throw GradleException("Unsupported target platform: $hostOs / $arch")
     }
+    linkDebugTaskName = linkTaskName.replace("Release", "Debug")
     tmpArtifactsDirectoryPath = "build/bitcode"
     setCompilerFlags = { compilerFlags ->
         kotlin {
@@ -73,4 +74,9 @@ decompileBitcodeConfig {
         println("[example] following compiler flags are set: $compilerFlags")
     }
     llOutputFileName = "example-bitcode.ll"
+    llDebugOutputFileName = "example-bitcode-debug.ll"
+}
+
+extractFromDecompiledBitcodeConfig {
+    recursionDepth = 1u
 }
