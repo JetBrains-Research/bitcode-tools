@@ -6,6 +6,7 @@ from llvmlite import binding as llvm
 import sys
 from typing import List
 from enum import Flag, auto
+import logging
 
 # usage: TODO
 # example: ./bitcode-extract.py -i bitcode.ll -o extractedBitcode.ll -r 2 -func 'kfun:#main(kotlin.Array<kotlin.String>){}'
@@ -15,7 +16,7 @@ class ExtractBitcodeError(Exception):
     pass
 
 
-def extract(target_func_name: str, rec_depth: int, bitcode: str) -> List[str]:
+def extract(target_func_name: str, max_rec_depth: int, bitcode: str) -> List[str]:
     """Extracts specified symbols from the @bitcode."""
     mod = parse(bitcode)
     # faster and more reliable than calling mod.get_function(name) each time
@@ -24,29 +25,41 @@ def extract(target_func_name: str, rec_depth: int, bitcode: str) -> List[str]:
     if target_func_name not in functions:
         raise ExtractBitcodeError(
             f"no function with the name '{target_func_name}' was found")
-    extracted_global_vars = {target_func_name: functions[target_func_name]}
+    extracted_func_names = {target_func_name: 0}  # name: depth
 
-    work_queue = deque(
-        [global_var for global_var in extracted_global_vars.values()
-         if global_var.is_function]
-    )
-    for _ in range(rec_depth):
+    work_queue = deque([func_name for func_name in extracted_func_names])
+    cur_depth = 0
+    while True:
         if len(work_queue) == 0:
+            logging.info(
+                f"all functions calls have been found by recursion depth {cur_depth}")
             break
-        func = work_queue.popleft()
-        for block in func.blocks:
+        func_name = work_queue.popleft()
+        cur_depth = extracted_func_names[func_name]
+        if cur_depth >= max_rec_depth:
+            logging.info(
+                f"found all function calls up to max recursion depth {max_rec_depth}")
+            break
+
+        for block in functions[func_name].blocks:
             for instr in block.instructions:
                 if instr.opcode != 'call':
                     continue
-                called_func_name = list(instr.operands)[-1].name
-                if called_func_name in extracted_global_vars:
-                    continue
-                print(called_func_name)  # TODO: support logging by flag
-                called_func = functions[called_func_name]
-                extracted_global_vars[called_func_name] = called_func
-                work_queue.append(called_func)
 
-    return [str(global_var) for global_var in extracted_global_vars.values()]
+                called_func_operand = list(instr.operands)[-1]
+                if called_func_operand.value_kind is not llvm.ValueKind.function:
+                    continue
+
+                called_func_name = called_func_operand.name
+                if called_func_name in extracted_func_names:
+                    continue
+
+                extracted_func_names[called_func_name] = cur_depth + 1
+                work_queue.append(called_func_name)
+                logging.info(
+                    f"found function call on recursion depth {extracted_func_names[called_func_name]}: '{called_func_name}'")
+
+    return [str(functions[func_name]) for func_name in extracted_func_names]
 
 
 def parse(bitcode: str) -> llvm.ModuleRef:
@@ -116,6 +129,8 @@ def run_tool(args: argparse.Namespace):
 
 def main():
     args = parse_args()
+    logging.basicConfig(level=logging.INFO,
+                        format='%(levelname)s: %(message)s')
     try:
         run_tool(args)
     except Exception as e:
