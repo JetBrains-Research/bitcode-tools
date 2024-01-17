@@ -3,7 +3,7 @@
 import argparse
 from collections import deque
 from llvmlite import binding as llvm
-import os
+import sys
 from typing import List
 from enum import Flag, auto
 
@@ -11,13 +11,20 @@ from enum import Flag, auto
 # example: ./bitcode-extract.py -i bitcode.ll -o extractedBitcode.ll -r 2 -func 'kfun:#main(kotlin.Array<kotlin.String>){}'
 
 
-def extract(func_name: str, rec_depth: int, bitcode: str) -> List[str]:
+class ExtractBitcodeError(Exception):
+    pass
+
+
+def extract(target_func_name: str, rec_depth: int, bitcode: str) -> List[str]:
     """Extracts specified symbols from the @bitcode."""
     mod = parse(bitcode)
     # faster and more reliable than calling mod.get_function(name) each time
     functions = {func.name: func for func in mod.functions}
-    extracted_global_vars = {func_name: functions[func_name]}
-    # TODO: handle func_name absence properly
+
+    if target_func_name not in functions:
+        raise ExtractBitcodeError(
+            f"no function with the name '{target_func_name}' was found")
+    extracted_global_vars = {target_func_name: functions[target_func_name]}
 
     work_queue = deque(
         [global_var for global_var in extracted_global_vars.values()
@@ -58,23 +65,15 @@ class LlvmNativeManager():
     def __init__(self, mode: LlvmNativeManagerMode = LlvmNativeManagerMode.ONLY_INIT) -> None:
         self.mode = mode
 
-    def __enter__(self):
+    def initialize(self):
         llvm.initialize()
         if self.mode in LlvmNativeManagerMode.ENABLE_PRINT_AND_CODEGEN:
             llvm.initialize_native_target()
         if self.mode in LlvmNativeManagerMode.ENABLE_PRINT | LlvmNativeManagerMode.ENABLE_PRINT_AND_CODEGEN:
             llvm.initialize_native_asmprinter()
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def shutdown(self):
         llvm.shutdown()
-
-
-def valid_bitcode_ll(value):
-    _, ext = os.path.splitext(value)
-    if ext.lower() != ('.ll') or not os.path.exists(value):
-        raise argparse.ArgumentTypeError(
-            f'{value} is not a bitcode `.ll` file')
-    return value
 
 
 def nonnegative_int(value):
@@ -85,25 +84,43 @@ def nonnegative_int(value):
     return ivalue
 
 
-parser = argparse.ArgumentParser()
-requiredArgs = parser.add_argument_group('required named arguments')
-requiredArgs.add_argument(
-    '-i', '--input', help='Input file name.', type=valid_bitcode_ll, required=True)
-requiredArgs.add_argument(
-    '-o', '--output', help='Output file name.', required=True)
-requiredArgs.add_argument('-func', '--function',
-                          help='Specify function to extract.', required=True)
-parser.add_argument('-r', '--recursive', type=nonnegative_int, default=0,
-                    help=('Recursively extract all called functions at the specified depth. '
-                          'Default depth is 0, meaning recursive extraction is disabled.'))
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    requiredArgs = parser.add_argument_group('required named arguments')
+    requiredArgs.add_argument(
+        '-i', '--input', help='Input file path.', required=True)
+    requiredArgs.add_argument(
+        '-o', '--output', help='Output file path.', required=True)
+    requiredArgs.add_argument('-func', '--function',
+                              help='Specify function to extract.', required=True)
+    parser.add_argument('-r', '--recursive', type=nonnegative_int, default=0,
+                        help=('Recursively extract all called functions at the specified depth. '
+                              'Default depth is 0, meaning recursive extraction is disabled.'))
 
-args = parser.parse_args()
+    args = parser.parse_args()
+    return args
 
-with open(args.input, 'r') as input_file:
-    bitcode = input_file.read()
 
-with LlvmNativeManager(mode=LlvmNativeManagerMode.ENABLE_PRINT):
+def run_tool(args: argparse.Namespace):
+    with open(args.input, 'r') as input_file:
+        bitcode = input_file.read()
+
+    manager = LlvmNativeManager(mode=LlvmNativeManagerMode.ENABLE_PRINT)
+    manager.initialize()
     extracted_symbols = extract(args.function, args.recursive, bitcode)
+    manager.shutdown()  # must not be called in `finally` section due to Segmentation fault
 
-with open(args.output, 'w') as output_file:
-    output_file.write('\n'.join(extracted_symbols))
+    with open(args.output, 'w') as output_file:
+        output_file.write('\n'.join(extracted_symbols))
+
+
+def main():
+    args = parse_args()
+    try:
+        run_tool(args)
+    except Exception as e:
+        print(f"Failed with error: {e}")
+        sys.exit(1)
+
+
+main()
