@@ -5,6 +5,7 @@ from collections import deque
 from llvmlite import binding as llvm
 import os
 from typing import List
+from enum import Flag, auto
 
 # usage: TODO
 # example: ./bitcode-extract.py -i bitcode.ll -o extractedBitcode.ll -r 2 -func 'kfun:#main(kotlin.Array<kotlin.String>){}'
@@ -45,16 +46,21 @@ def parse(bitcode: str) -> llvm.ModuleRef:
     return mod
 
 
+class LlvmNativeManagerMode(Flag):
+    ONLY_INIT = auto()
+    ENABLE_PRINT = auto()
+    ENABLE_PRINT_AND_CODEGEN = auto()
+
+
 class LlvmNativeManager():
-    def __init__(self, codegen: bool = False, print: bool = False) -> None:
-        self.codegen = codegen
-        self.print = print
+    def __init__(self, mode: LlvmNativeManagerMode = LlvmNativeManagerMode.ONLY_INIT) -> None:
+        self.mode = mode
 
     def __enter__(self):
         llvm.initialize()
-        if self.codegen:
+        if self.mode in LlvmNativeManagerMode.ENABLE_PRINT_AND_CODEGEN:
             llvm.initialize_native_target()
-        if self.print:
+        if self.mode in LlvmNativeManagerMode.ENABLE_PRINT | LlvmNativeManagerMode.ENABLE_PRINT_AND_CODEGEN:
             llvm.initialize_native_asmprinter()
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -94,7 +100,7 @@ args = parser.parse_args()
 with open(args.input, 'r') as input_file:
     bitcode = input_file.read()
 
-with LlvmNativeManager(print=True):
+with LlvmNativeManager(mode=LlvmNativeManagerMode.ENABLE_PRINT):
     extracted_symbols = extract(args.function, args.recursive, bitcode)
 
 with open(args.output, 'w') as output_file:
