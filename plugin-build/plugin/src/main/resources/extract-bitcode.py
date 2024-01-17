@@ -15,29 +15,31 @@ def extract(func_name: str, rec_depth: int, bitcode: str) -> List[str]:
     """Extracts specified symbols from the @bitcode."""
     mod = parse(bitcode)
     # faster and more reliable than calling mod.get_function(name) each time
-    functions = {f.name: f for f in mod.functions}
-    # extracted global variables
-    gvs = {func_name: functions[func_name]}
+    functions = {func.name: func for func in mod.functions}
+    extracted_global_vars = {func_name: functions[func_name]}
     # TODO: handle func_name absence properly
 
-    work_queue = deque([gv for _, gv in gvs.items() if gv.is_function])
+    work_queue = deque(
+        [global_var for global_var in extracted_global_vars.values()
+         if global_var.is_function]
+    )
     for _ in range(rec_depth):
         if len(work_queue) == 0:
             break
-        f = work_queue.popleft()
-        for b in f.blocks:
-            for i in b.instructions:
-                if i.opcode != 'call':
+        func = work_queue.popleft()
+        for block in func.blocks:
+            for instr in block.instructions:
+                if instr.opcode != 'call':
                     continue
-                cf_name = list(i.operands)[-1].name
-                if cf_name in gvs:
+                called_func_name = list(instr.operands)[-1].name
+                if called_func_name in extracted_global_vars:
                     continue
-                print(cf_name) # TODO: support logging by flag
-                cf = functions[cf_name]
-                gvs[cf_name] = cf
-                work_queue.append(cf)
+                print(called_func_name)  # TODO: support logging by flag
+                called_func = functions[called_func_name]
+                extracted_global_vars[called_func_name] = called_func
+                work_queue.append(called_func)
 
-    return [str(gv) for _, gv in gvs.items()]
+    return [str(global_var) for global_var in extracted_global_vars.values()]
 
 
 def parse(bitcode: str) -> llvm.ModuleRef:
