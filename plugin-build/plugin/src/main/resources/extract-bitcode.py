@@ -26,6 +26,7 @@ def extract(target_func_name: str, max_rec_depth: int, bitcode: str) -> List[str
         raise ExtractBitcodeError(
             f"no function with the name '{target_func_name}' was found")
     extracted_func_names = {target_func_name: 0}  # name: depth
+    logging.info(f"found target function: '{target_func_name}'")
 
     work_queue = deque([func_name for func_name in extracted_func_names])
     cur_depth = 0
