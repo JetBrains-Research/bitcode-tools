@@ -57,7 +57,8 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
                     project,
                     extractBitcodeTaskParameters = ExtractBitcodeTaskParameters(
                         functionToExtractName = extractBitcodeExtension.functionToExtractName,
-                        recursionDepth = extractBitcodeExtension.recursionDepth
+                        recursionDepth = extractBitcodeExtension.recursionDepth,
+                        verbose = extractBitcodeExtension.verbose
                     ),
                     setCompilerFlags = decompileBitcodeExtension.setCompilerFlags
                 )
@@ -111,6 +112,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             outputFilePath = extractedBitcodeFilePath
             functionToExtractName = taskParameters.functionToExtractName
             recursionDepth = taskParameters.recursionDepth
+            verbose = taskParameters.verbose
             doFirst {
                 if (inputFilePath.orNull != llFilePath) {
                     throw BitcodeAnalysisException(PIPELINE_VIOLATION_ERROR_MESSAGE)
@@ -206,5 +208,6 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
     private data class ExtractBitcodeTaskParameters(
         val functionToExtractName: String,
         val recursionDepth: UInt,
+        val verbose: Boolean,
     )
 }

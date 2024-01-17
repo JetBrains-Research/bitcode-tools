@@ -79,4 +79,5 @@ decompileBitcodeConfig {
 
 extractFromDecompiledBitcodeConfig {
     recursionDepth = 1u
+    verbose = true
 }

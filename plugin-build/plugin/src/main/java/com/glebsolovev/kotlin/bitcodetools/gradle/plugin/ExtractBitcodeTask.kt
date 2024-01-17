@@ -62,6 +62,13 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     protected val actualRecursionDepthAsString: Property<String> =
         objects.property(String::class.java).convention(recursionDepth.toString())
 
+    @get:Input
+    @get:Option(
+        option = "verbose",
+        description = "Prints extra info messages to the console to track the extraction process."
+    )
+    val verbose: Property<Boolean> = objects.property(Boolean::class.java).convention(false)
+
     @get:InputFile
     val actualInputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(inputFilePath)
@@ -101,7 +108,9 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
                 ""
                 }--function '${functionToExtractName.get()}' ${
                 ""
-                }--recursive "${actualRecursionDepthAsString.get()}"
+                }--recursive "${actualRecursionDepthAsString.get()}"${
+                ""
+                }${if (verbose.get()) " --verbose" else ""}
                 """.trimIndent()
             )
         }

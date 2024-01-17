@@ -11,6 +11,7 @@ abstract class ExtractBitcodeExtension @Inject constructor(project: Project) {
 
     var functionToExtractName: String = "kfun:#main(){}"
     var recursionDepth: UInt = 0u
+    var verbose: Boolean = false
     var outputFileName: String = "extracted-bitcode.ll"
     var debugOutputFileName: String = "extracted-bitcode-debug.ll"
 }

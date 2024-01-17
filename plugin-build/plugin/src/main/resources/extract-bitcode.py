@@ -32,13 +32,13 @@ def extract(target_func_name: str, max_rec_depth: int, bitcode: str) -> List[str
     while True:
         if len(work_queue) == 0:
             logging.info(
-                f"all functions calls have been found by recursion depth {cur_depth}")
+                f"all functions calls have been found by recursion depth {cur_depth}\n")
             break
         func_name = work_queue.popleft()
         cur_depth = extracted_func_names[func_name]
         if cur_depth >= max_rec_depth:
             logging.info(
-                f"found all function calls up to max recursion depth {max_rec_depth}")
+                f"function calls up to max recursion depth {max_rec_depth} have been found\n")
             break
 
         for block in functions[func_name].blocks:
@@ -109,6 +109,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('-r', '--recursive', type=nonnegative_int, default=0,
                         help=('Recursively extract all called functions at the specified depth. '
                               'Default depth is 0, meaning recursive extraction is disabled.'))
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Print extra info messages to track the extraction process.')
 
     args = parser.parse_args()
     return args
@@ -129,8 +131,11 @@ def run_tool(args: argparse.Namespace):
 
 def main():
     args = parse_args()
-    logging.basicConfig(level=logging.INFO,
-                        format='%(levelname)s: %(message)s')
+    if args.verbose:
+        logging.basicConfig(level=logging.INFO,
+                            format='%(levelname)s: %(message)s')
+    else:
+        logging.disable = True
     try:
         run_tool(args)
     except Exception as e:
