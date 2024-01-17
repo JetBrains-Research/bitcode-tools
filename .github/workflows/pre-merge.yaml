@@ -62,3 +62,9 @@ jobs:
           ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --input "build/bitcode/bitcode.ll" --output "build/bitcode/main-bitcode-by-standalone.ll"
           test -f example/build/bitcode/main-bitcode-by-standalone.ll
         if: success()
+
+      - name: Test multiple functions to extract
+        run: |
+          ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --function 'kfun:#main(){}' --function 'ThrowIllegalArgumentException' --function 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/multiple-functions.ll" --verbose
+          test -f example/build/bitcode/multiple-functions.ll
+        if: success()

@@ -12,21 +12,23 @@ import logging
 # example: ./bitcode-extract.py -i bitcode.ll -o extractedBitcode.ll -r 2 -func 'kfun:#main(kotlin.Array<kotlin.String>){}'
 
 
-class ExtractBitcodeError(Exception):
-    pass
-
-
-def extract(target_func_name: str, max_rec_depth: int, bitcode: str) -> List[str]:
+def extract(target_functions_names: List[str], max_rec_depth: int, bitcode: str) -> List[str]:
     """Extracts specified symbols from the @bitcode."""
     mod = parse(bitcode)
     # faster and more reliable than calling mod.get_function(name) each time
     functions = {func.name: func for func in mod.functions}
 
-    if target_func_name not in functions:
-        raise ExtractBitcodeError(
-            f"no function with the name '{target_func_name}' was found")
-    extracted_func_names = {target_func_name: 0}  # name: depth
-    logging.info(f"found target function: '{target_func_name}'")
+    extracted_func_names = {}  # name: depth
+    for target_func_name in dict.fromkeys(target_functions_names):
+        if target_func_name not in functions:
+            logging.warning(
+                f"no function with the name '{target_func_name}' was found")
+        else:
+            extracted_func_names[target_func_name] = 0
+            logging.info(f"found target function: '{target_func_name}'")
+    if len(extracted_func_names) == 0:
+        logging.warning("no functions to extract, output file will be empty\n")
+        return []
 
     work_queue = deque([func_name for func_name in extracted_func_names])
     cur_depth = 0
@@ -105,8 +107,10 @@ def parse_args() -> argparse.Namespace:
         '-i', '--input', help='Input file path.', required=True)
     requiredArgs.add_argument(
         '-o', '--output', help='Output file path.', required=True)
-    requiredArgs.add_argument('-func', '--function',
-                              help='Specify function to extract.', required=True)
+    requiredArgs.add_argument('-f', '--function',
+                              action='append', required=True,
+                              help=('Specify functions to extract. '
+                                    'To specify multiple functions use this flag several times.'))
     parser.add_argument('-r', '--recursive', type=nonnegative_int, default=0,
                         help=('Recursively extract all called functions at the specified depth. '
                               'Default depth is 0, meaning recursive extraction is disabled.'))
@@ -132,11 +136,11 @@ def run_tool(args: argparse.Namespace):
 
 def main():
     args = parse_args()
-    if args.verbose:
-        logging.basicConfig(level=logging.INFO,
-                            format='%(levelname)s: %(message)s')
-    else:
-        logging.disable = True
+
+    logging_level = logging.INFO if args.verbose else logging.WARNING
+    logging.basicConfig(level=logging_level,
+                        format='%(levelname)s: %(message)s')
+
     try:
         run_tool(args)
     except Exception as e:

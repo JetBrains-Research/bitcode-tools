@@ -56,7 +56,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
                 it.registerTasks(
                     project,
                     extractBitcodeTaskParameters = ExtractBitcodeTaskParameters(
-                        functionToExtractName = extractBitcodeExtension.functionToExtractName,
+                        functionsToExtract = extractBitcodeExtension.functionsToExtract.get(),
                         recursionDepth = extractBitcodeExtension.recursionDepth,
                         verbose = extractBitcodeExtension.verbose
                     ),
@@ -110,7 +110,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             dependsOn(decompileBitcodeTaskName)
             inputFilePath = llFilePath
             outputFilePath = extractedBitcodeFilePath
-            functionToExtractName = taskParameters.functionToExtractName
+            functionsToExtract = taskParameters.functionsToExtract
             recursionDepth = taskParameters.recursionDepth
             verbose = taskParameters.verbose
             doFirst {
@@ -206,7 +206,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
     }
 
     private data class ExtractBitcodeTaskParameters(
-        val functionToExtractName: String,
+        val functionsToExtract: List<String>,
         val recursionDepth: UInt,
         val verbose: Boolean,
     )

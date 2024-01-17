@@ -3,6 +3,7 @@ package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
@@ -47,17 +48,21 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     @get:Input
     @get:Option(
         option = "function",
-        description = "Name of the function to extract (should be specified exactly the same as in the bitcode file)."
+        description = "Name of the function to extract (should be specified exactly the same as in the bitcode file). ${
+        ""
+        }Use this flag several times to specify multiple functions to extract, e.g. `--function foo --function bar`."
     )
-    val functionToExtractName: Property<String> = objects.property(String::class.java)
+    val functionsToExtract: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
 
     @get:Input
     @get:Option(
         option = "recursionDepth",
         description =
-        "Enables recursive extraction of all called functions " +
-            "up to the specified depth relative to `functionToExtractName`. " +
-            "Default depth is 0, meaning recursive extraction is disabled."
+        "Enables recursive extraction of all called functions ${
+        ""
+        }up to the specified depth relative to `functionToExtractName`. ${
+        ""
+        }Default depth is 0, meaning recursive extraction is disabled."
     )
     protected val actualRecursionDepthAsString: Property<String> =
         objects.property(String::class.java).convention(recursionDepth.toString())
@@ -79,6 +84,15 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         project.layout.projectDirectory.file(outputFilePath)
     )
 
+    private fun validateArguments() {
+        if (functionsToExtract.get().isEmpty()) {
+            throw BitcodeAnalysisException("at least one function to extract should be specified")
+        }
+        if (actualRecursionDepthAsString.get().toUIntOrNull() == null) {
+            throw BitcodeAnalysisException("`recursionDepth` must be a non-negative integer")
+        }
+    }
+
     private fun extractScriptIntoTmpFile(): Path {
         val scriptFileContent =
             object {}.javaClass.getResource(EXTRACT_BITCODE_SCRIPT_PATH)?.readText()
@@ -90,9 +104,8 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     @TaskAction
     fun produce() {
-        if (actualRecursionDepthAsString.get().toUIntOrNull() == null) {
-            throw BitcodeAnalysisException("`recursionDepth` must be a non-negative integer")
-        }
+        validateArguments()
+
         val scriptTmpFilePath = extractScriptIntoTmpFile().toAbsolutePath()
         val inputFilePath = actualInputFile.get().asFile.absolutePath
         val outputFilePath = actualOutputFile.get().asFile.absolutePath
@@ -106,7 +119,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
                 ""
                 }--input "$inputFilePath" --output "$outputFilePath" ${
                 ""
-                }--function '${functionToExtractName.get()}' ${
+                }${functionsToExtract.get().joinToString(separator = " ") { "--function '$it'" }} ${
                 ""
                 }--recursive "${actualRecursionDepthAsString.get()}"${
                 ""
