@@ -46,11 +46,11 @@ def extract(target_func_name: str, max_rec_depth: int, bitcode: str) -> List[str
                 if instr.opcode != 'call':
                     continue
 
-                called_func_operand = list(instr.operands)[-1]
-                if called_func_operand.value_kind is not llvm.ValueKind.function:
+                called_operand = list(instr.operands)[-1]
+                if called_operand.value_kind is not llvm.ValueKind.function:
                     continue
 
-                called_func_name = called_func_operand.name
+                called_func_name = called_operand.name
                 if called_func_name in extracted_func_names:
                     continue
 
