@@ -62,7 +62,7 @@ decompileBitcodeConfig {
         else -> throw GradleException("Unsupported target platform: $hostOs / $arch")
     }
     linkDebugTaskName = linkTaskName.replace("Release", "Debug")
-    tmpArtifactsDirectoryPath = "build/bitcode"
+    artifactsDirectoryPath = "build/bitcode"
     setCompilerFlags = { compilerFlags ->
         kotlin {
             listOf(macosX64(), macosArm64(), mingwX64(), linuxX64()).forEach {

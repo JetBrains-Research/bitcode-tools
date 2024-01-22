@@ -9,9 +9,9 @@ abstract class DecompileBitcodeExtension @Inject constructor(project: Project) {
     private val objects = project.objects
 
     abstract var linkTaskName: String
-    abstract var tmpArtifactsDirectoryPath: String
     abstract var setCompilerFlags: (compilerFlags: List<String>) -> Unit
 
+    var artifactsDirectoryPath: String = "build/bitcode"
     var bcInputFileName: String = "out.bc"
     var llOutputFileName: String = "bitcode.ll"
 
