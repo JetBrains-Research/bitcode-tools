@@ -52,7 +52,19 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         ""
         }Use this flag several times to specify multiple functions to extract, e.g. `--function foo --function bar`."
     )
-    val functionsToExtract: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val functionsToExtractNames: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+
+    @get:Input
+    @get:Option(
+        option = "function-pattern",
+        description = "Extract all functions with the names matching the specified regex pattern. ${
+        ""
+        }Use this flag several times to provide multiple patterns to search for, ${
+        ""
+        }e.g. `--function-pattern foo --function-pattern bar`."
+    )
+    val functionsToExtractPatterns: ListProperty<String> =
+        objects.listProperty(String::class.java).convention(emptyList())
 
     @get:Input
     @get:Option(
@@ -85,8 +97,10 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     )
 
     private fun validateArguments() {
-        if (functionsToExtract.get().isEmpty()) {
-            throw BitcodeAnalysisException("at least one function to extract should be specified")
+        if (functionsToExtractNames.get().isEmpty() && functionsToExtractPatterns.get().isEmpty()) {
+            throw BitcodeAnalysisException(
+                "at least one function to extract by its name or a pattern should be specified"
+            )
         }
         if (actualRecursionDepthAsString.get().toUIntOrNull() == null) {
             throw BitcodeAnalysisException("`recursionDepth` must be a non-negative integer")
@@ -101,6 +115,15 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
             writeText(scriptFileContent)
         }
     }
+
+    private fun ListProperty<String>.toPythonFlags(flagName: String) =
+        get().run {
+            if (isEmpty()) {
+                ""
+            } else {
+                joinToString(separator = " ", postfix = " ") { "$flagName '$it'" }
+            }
+        }
 
     @TaskAction
     fun produce() {
@@ -119,7 +142,9 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
                 ""
                 }--input "$inputFilePath" --output "$outputFilePath" ${
                 ""
-                }${functionsToExtract.get().joinToString(separator = " ") { "--function '$it'" }} ${
+                }${functionsToExtractNames.toPythonFlags("--function")}${
+                ""
+                }${functionsToExtractPatterns.toPythonFlags("--function-pattern")}${
                 ""
                 }--recursive "${actualRecursionDepthAsString.get()}"${
                 ""

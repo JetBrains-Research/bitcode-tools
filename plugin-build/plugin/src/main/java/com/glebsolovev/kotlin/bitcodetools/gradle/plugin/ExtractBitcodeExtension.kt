@@ -9,9 +9,12 @@ abstract class ExtractBitcodeExtension @Inject constructor(project: Project) {
 
     private val objects = project.objects
 
-    val functionsToExtract: ListProperty<String> = objects.listProperty(String::class.java)
+    val functionsToExtractNames: ListProperty<String> = objects.listProperty(String::class.java)
+    val functionsToExtractPatterns: ListProperty<String> = objects.listProperty(String::class.java)
+
     var recursionDepth: UInt = 0u
     var verbose: Boolean = false
+
     var outputFileName: String = "extracted-bitcode.ll"
     var debugOutputFileName: String = "extracted-bitcode-debug.ll"
 }

@@ -78,8 +78,9 @@ decompileBitcodeConfig {
 }
 
 extractFromDecompiledBitcodeConfig {
-    functionsToExtract = listOf("kfun:#main(){}")
-    functionsToExtract.add("ThrowIllegalArgumentException")
+    functionsToExtractNames = listOf("kfun:#main(){}")
+    functionsToExtractNames.add("ThrowIllegalArgumentException")
+    functionsToExtractPatterns.add(".*main.*")
     recursionDepth = 1u
     verbose = true
 }

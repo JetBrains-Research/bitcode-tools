@@ -68,3 +68,9 @@ jobs:
           ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --function 'kfun:#main(){}' --function 'ThrowIllegalArgumentException' --function 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/multiple-functions.ll" --verbose
           test -f example/build/bitcode/multiple-functions.ll
         if: success()
+
+      - name: Test functions extraction by patterns
+        run: |
+          ./gradlew :example:extractSomeBitcode --function-pattern '.*#main.*' --function-pattern '.*#mai.*' --function-pattern 'ThrowIllegalArgumentException' --function-pattern 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/patterns.ll" --verbose
+          test -f example/build/bitcode/patterns.ll
+        if: success()

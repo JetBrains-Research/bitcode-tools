@@ -2,35 +2,63 @@
 
 import argparse
 from collections import deque
-from llvmlite import binding as llvm
-import sys
-from typing import List
 from enum import Flag, auto
+from llvmlite import binding as llvm
 import logging
+import re
+import sys
+from typing import List, Dict, Optional
 
 # usage: TODO
 # example: ./bitcode-extract.py -i bitcode.ll -o extractedBitcode.ll -r 2 -func 'kfun:#main(kotlin.Array<kotlin.String>){}'
 
 
-def extract(target_functions_names: List[str], max_rec_depth: int, bitcode: str) -> List[str]:
-    """Extracts specified symbols from the @bitcode."""
-    mod = parse(bitcode)
-    # faster and more reliable than calling mod.get_function(name) each time
-    functions = {func.name: func for func in mod.functions}
-
+def find_target_functions(
+    target_functions_names: Optional[List[str]],
+    target_functions_patterns: Optional[List[str]],
+    functions: Dict[str, llvm.ValueRef]
+) -> Dict[str, int]:
     extracted_func_names = {}  # name: depth
-    for target_func_name in dict.fromkeys(target_functions_names):
-        if target_func_name not in functions:
-            logging.warning(
-                f"no function with the name '{target_func_name}' was found")
-        else:
-            extracted_func_names[target_func_name] = 0
-            logging.info(f"found target function: '{target_func_name}'")
-    if len(extracted_func_names) == 0:
-        logging.warning("no functions to extract, output file will be empty\n")
-        return []
 
-    work_queue = deque([func_name for func_name in extracted_func_names])
+    if target_functions_names is not None:
+        for target_func_name in dict.fromkeys(target_functions_names):
+            if target_func_name not in functions:
+                logging.warning(
+                    f"no function with the name '{target_func_name}' was found")
+            else:
+                extracted_func_names[target_func_name] = 0
+                logging.info(
+                    f"found target function by name: '{target_func_name}'")
+
+    if target_functions_patterns is not None:
+        for target_func_pattern in dict.fromkeys(target_functions_patterns):
+            try:
+                regex_pattern = re.compile(target_func_pattern)
+            except Exception as e:
+                logging.error(f"pattern '{target_func_pattern}' is invalid: {e}")
+                continue
+
+            functions_names_matched = [
+                func_name for func_name in functions if regex_pattern.match(func_name)]
+            if len(functions_names_matched) == 0:
+                logging.warning(
+                    f"no functions matching the pattern '{target_func_pattern}' were found")
+            else:
+                extracted_func_names.update(
+                    dict.fromkeys(functions_names_matched, 0))
+                for func_name in functions_names_matched:
+                    logging.info(
+                        f"for the pattern '{target_func_pattern}', found target function: '{func_name}'")
+
+    return extracted_func_names
+
+
+def extract_function_calls_recursively(
+        extracted_func_names: Dict[str, int],
+        max_rec_depth: int,
+        functions: Dict[str, llvm.ValueRef]
+) -> None:
+    work_queue = deque(extracted_func_names.keys())
     cur_depth = 0
     while True:
         if len(work_queue) == 0:
@@ -61,6 +89,27 @@ def extract(target_functions_names: List[str], max_rec_depth: int, bitcode: str)
                 work_queue.append(called_func_name)
                 logging.info(
                     f"found function call on recursion depth {extracted_func_names[called_func_name]}: '{called_func_name}'")
+
+
+def extract(
+    target_functions_names: List[str],
+    target_functions_regexes: List[str],
+    max_rec_depth: int,
+    bitcode: str
+) -> List[str]:
+    """Extracts specified symbols from the @bitcode."""
+    mod = parse(bitcode)
+    # faster and more reliable than calling mod.get_function(name) each time
+    functions = {func.name: func for func in mod.functions}
+
+    extracted_func_names = find_target_functions(
+        target_functions_names, target_functions_regexes, functions)  # name: depth
+    if len(extracted_func_names) == 0:
+        logging.warning("no functions to extract, output file will be empty\n")
+        return []
+
+    extract_function_calls_recursively(
+        extracted_func_names, max_rec_depth, functions)
 
     return [str(functions[func_name]) for func_name in extracted_func_names]
 
@@ -107,10 +156,14 @@ def parse_args() -> argparse.Namespace:
         '-i', '--input', help='Input file path.', required=True)
     requiredArgs.add_argument(
         '-o', '--output', help='Output file path.', required=True)
-    requiredArgs.add_argument('-f', '--function',
-                              action='append', required=True,
-                              help=('Specify functions to extract. '
+    parser.add_argument('-f', '--function',
+                              action='append',
+                              help=('Specify function to extract by its name. '
                                     'To specify multiple functions use this flag several times.'))
+    parser.add_argument('-p', '--function-pattern',
+                              action='append',
+                              help=('Specify functions to extract by a regex pattern. '
+                                    'To provide multiple patterns use this flag several times.'))
     parser.add_argument('-r', '--recursive', type=nonnegative_int, default=0,
                         help=('Recursively extract all called functions at the specified depth. '
                               'Default depth is 0, meaning recursive extraction is disabled.'))
@@ -118,6 +171,10 @@ def parse_args() -> argparse.Namespace:
                         help='Print extra info messages to track the extraction process.')
 
     args = parser.parse_args()
+    if not (args.function or args.function_pattern):
+        parser.error(
+            "No action requested, at least one function to extract (by its name or a pattern) should be specified")
+
     return args
 
 
@@ -127,7 +184,8 @@ def run_tool(args: argparse.Namespace):
 
     manager = LlvmNativeManager(mode=LlvmNativeManagerMode.ENABLE_PRINT)
     manager.initialize()
-    extracted_symbols = extract(args.function, args.recursive, bitcode)
+    extracted_symbols = extract(
+        args.function, args.function_pattern, args.recursive, bitcode)
     manager.shutdown()  # must not be called in `finally` section due to Segmentation fault
 
     with open(args.output, 'w') as output_file:
@@ -139,7 +197,7 @@ def main():
 
     logging_level = logging.INFO if args.verbose else logging.WARNING
     logging.basicConfig(level=logging_level,
-                        format='%(levelname)s: %(message)s')
+                        format='[%(levelname)s] %(message)s')
 
     try:
         run_tool(args)
