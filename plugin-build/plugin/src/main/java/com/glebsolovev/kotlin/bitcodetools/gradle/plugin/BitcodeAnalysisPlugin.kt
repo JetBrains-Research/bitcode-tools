@@ -31,6 +31,8 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             ""
             }If you still would like to overcome this behaviour, ${
             ""
+            }use the standalone `extractSomeBitcode` task / ${
+            ""
             }register a custom `ExtractBitcodeTask` task and run it instead."
 
         const val GROUP_NAME = "bitcode analysis"
