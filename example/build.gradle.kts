@@ -78,10 +78,11 @@ decompileBitcodeConfig {
 }
 
 extractFromDecompiledBitcodeConfig {
-    functionsToExtractNames = listOf("kfun:#main(){}")
-    functionsToExtractNames.add("ThrowIllegalArgumentException")
-    functionsToExtractPatterns.add(".*main.*")
-    functionsToIgnorePatterns.add("kfun:kotlin.*")
+    functionNames = listOf("kfun:#main(){}", "ThrowIllegalArgumentException")
+    functionPatterns.add(".*main.*")
+    linePatterns.add("%2 = icmp eq i64 %1, 0")
+    linePatterns.add(".*kfun:.*#hashCode\\(\\)\\{\\}kotlin\\.Int")
+    ignorePatterns.add("kfun:kotlin.*")
     recursionDepth = 1u
     verbose = true
 }

@@ -52,7 +52,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         ""
         }Use this flag several times to specify multiple functions to extract, e.g. `--function foo --function bar`."
     )
-    val functionsToExtractNames: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val functionNames: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
 
     @get:Input
     @get:Option(
@@ -63,7 +63,21 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         ""
         }e.g. `--function-pattern foo --function-pattern bar`."
     )
-    val functionsToExtractPatterns: ListProperty<String> =
+    val functionPatterns: ListProperty<String> =
+        objects.listProperty(String::class.java).convention(emptyList())
+
+    @get:Input
+    @get:Option(
+        option = "line-pattern",
+        description = "Extract all functions that contain at least one code line ${
+        ""
+        }matching the specified regex pattern. ${
+        ""
+        }Use this flag several times to provide multiple patterns to search for, ${
+        ""
+        }e.g. `--line-pattern foo --line-pattern bar`."
+    )
+    val linePatterns: ListProperty<String> =
         objects.listProperty(String::class.java).convention(emptyList())
 
     @get:Input
@@ -75,7 +89,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         ""
         }e.g. `--ignore-function-pattern foo --ignore-function-pattern bar`."
     )
-    val functionsToIgnorePatterns: ListProperty<String> =
+    val ignorePatterns: ListProperty<String> =
         objects.listProperty(String::class.java).convention(emptyList())
 
     @get:Input
@@ -109,9 +123,9 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     )
 
     private fun validateArguments() {
-        if (functionsToExtractNames.get().isEmpty() && functionsToExtractPatterns.get().isEmpty()) {
+        if (functionNames.get().isEmpty() && functionPatterns.get().isEmpty() && linePatterns.get().isEmpty()) {
             throw BitcodeAnalysisException(
-                "at least one function to extract by its name or a pattern should be specified"
+                "at least one function to extract by its name, pattern or a line pattern should be specified"
             )
         }
         if (actualRecursionDepthAsString.get().toUIntOrNull() == null) {
@@ -154,11 +168,13 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
                 ""
                 }--input "$inputFilePath" --output "$outputFilePath" ${
                 ""
-                }${functionsToExtractNames.toPythonFlags("--function")}${
+                }${functionNames.toPythonFlags("--function")}${
                 ""
-                }${functionsToExtractPatterns.toPythonFlags("--function-pattern")}${
+                }${functionPatterns.toPythonFlags("--function-pattern")}${
                 ""
-                }${functionsToIgnorePatterns.toPythonFlags("--ignore-function-pattern")}${
+                }${linePatterns.toPythonFlags("--line-pattern")}${
+                ""
+                }${ignorePatterns.toPythonFlags("--ignore-function-pattern")}${
                 ""
                 }--recursion-depth "${actualRecursionDepthAsString.get()}"${
                 ""

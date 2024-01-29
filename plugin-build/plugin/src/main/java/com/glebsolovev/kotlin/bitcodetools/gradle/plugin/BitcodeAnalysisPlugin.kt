@@ -114,9 +114,10 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             dependsOn(decompileBitcodeTaskName)
             inputFilePath = llFilePath
             outputFilePath = extractedBitcodeFilePath
-            functionsToExtractNames = taskParameters.functionsToExtractNames
-            functionsToExtractPatterns = taskParameters.functionsToExtractPatterns
-            functionsToIgnorePatterns = taskParameters.functionsToIgnorePatterns
+            functionNames = taskParameters.functionNames
+            functionPatterns = taskParameters.functionPatterns
+            linePatterns = taskParameters.linePatterns
+            ignorePatterns = taskParameters.ignorePatterns
             recursionDepth = taskParameters.recursionDepth
             verbose = taskParameters.verbose
             doFirst {
@@ -189,9 +190,10 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
     }
 
     private fun ExtractBitcodeExtension.toExtractBitcodeTaskParameters() = ExtractBitcodeTaskParameters(
-        functionsToExtractNames = functionsToExtractNames.get(),
-        functionsToExtractPatterns = functionsToExtractPatterns.get(),
-        functionsToIgnorePatterns = functionsToIgnorePatterns.get(),
+        functionNames = functionNames.get(),
+        functionPatterns = functionPatterns.get(),
+        linePatterns = linePatterns.get(),
+        ignorePatterns = ignorePatterns.get(),
         recursionDepth = recursionDepth,
         verbose = verbose
     )
@@ -220,9 +222,10 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
     }
 
     private data class ExtractBitcodeTaskParameters(
-        val functionsToExtractNames: List<String>,
-        val functionsToExtractPatterns: List<String>,
-        val functionsToIgnorePatterns: List<String>,
+        val functionNames: List<String>,
+        val functionPatterns: List<String>,
+        val linePatterns: List<String>,
+        val ignorePatterns: List<String>,
         val recursionDepth: UInt,
         val verbose: Boolean,
     )

@@ -7,7 +7,7 @@ from llvmlite import binding as llvm
 import logging
 import re
 import sys
-from typing import Callable, List, Dict, Optional, Set
+from typing import Any, Callable, List, Dict, Optional, Set
 
 # usage: check './bitcode-extract.py --help' or 'python3 bitcode-extract.py --help'
 
@@ -23,20 +23,24 @@ def compile_pattern(pattern: str) -> Optional[re.Pattern]:
 
 
 def find_matching_functions(
-        patterns: Optional[List[str]],
+        patterns: List[str],
         functions: Dict[str, llvm.ValueRef],
+        match_function: Callable[[re.Pattern, str], Any],
         handle_no_matches: Callable[[str], None],
-        handle_matched_functions: Callable[[str, List[str]], List[str]]
+        handle_matched_functions: Callable[[str, Dict[str, Any]], List[str]]
 ) -> List[str]:
-    if patterns is None:
-        return []
     all_functions_names_matched = {}
     for pattern in dict.fromkeys(patterns):
         regex_pattern = compile_pattern(pattern)
         if regex_pattern is None:
             return []
-        functions_names_matched = [
-            func_name for func_name in functions if regex_pattern.match(func_name)]
+
+        functions_names_matched = {}
+        for func_name in functions:
+            matched_artifact = match_function(regex_pattern, func_name)
+            if matched_artifact is not None:
+                functions_names_matched[func_name] = matched_artifact
+
         if len(functions_names_matched) == 0:
             handle_no_matches(pattern)
         else:
@@ -50,7 +54,10 @@ def find_functions_to_ignore(
         functions_patterns_to_ignore: Optional[List[str]],
         functions: Dict[str, llvm.ValueRef]
 ) -> Set[str]:
-    def handle_matched_functions(pattern_to_ignore: str, functions_names_matched: str) -> List[str]:
+    if functions_patterns_to_ignore is None:
+        return set()
+
+    def handle_matched_functions(pattern_to_ignore: str, functions_names_matched: Dict[str, None]) -> List[str]:
         functions_to_ignore_num = len(functions_names_matched)
         omit_functions_names = functions_to_ignore_num > PRINT_IGNORED_FUNCTIONS_NAMES_MAX_LIMIT
         functions_names_msg = ''.join(
@@ -70,55 +77,132 @@ def find_functions_to_ignore(
     return set(find_matching_functions(
         functions_patterns_to_ignore,
         functions,
+        match_function=lambda regex_pattern, func_name: regex_pattern.match(
+            func_name),
         handle_no_matches=lambda pattern_to_ignore: logging.warning(
             f"the ignoring pattern '{pattern_to_ignore}' is redundant, no functions matching it"),
         handle_matched_functions=handle_matched_functions
     ))
 
 
+def find_target_functions_by_names(
+    functions_names: List[str],
+    functions_to_ignore: Set[str],
+    functions: Dict[str, llvm.ValueRef]
+) -> Dict[str, int]:
+    extracted_funcs_to_depths = {}
+    for target_func_name in dict.fromkeys(functions_names):
+        if target_func_name not in functions:
+            logging.warning(
+                f"no function with the name '{target_func_name}' was found")
+        elif target_func_name in functions_to_ignore:
+            logging.debug(
+                f"found target function by name, but it is ignored: '{target_func_name}'")
+        else:
+            extracted_funcs_to_depths[target_func_name] = 0
+            logging.info(
+                f"found target function by name: '{target_func_name}'")
+    return extracted_funcs_to_depths
+
+
+def find_target_functions_by_patterns(
+    functions_patterns: List[str],
+    functions_to_ignore: Set[str],
+    functions: Dict[str, llvm.ValueRef]
+) -> Dict[str, int]:
+    def handle_matched_functions(func_pattern: str, functions_names_matched: Dict[str, None]) -> List[str]:
+        filtered_matched_functions = []
+        for func_name in functions_names_matched:
+            if func_name in functions_to_ignore:
+                logging.debug(
+                    f"matching pattern '{func_pattern}', found target function, but it is ignored: '{func_name}'")
+            else:
+                filtered_matched_functions.append(func_name)
+                logging.info(
+                    f"matching pattern '{func_pattern}', found target function: '{func_name}'")
+        return filtered_matched_functions
+
+    return dict.fromkeys(find_matching_functions(
+        functions_patterns,
+        functions,
+        match_function=lambda regex_pattern, func_name: regex_pattern.match(
+            func_name),
+        handle_no_matches=lambda func_pattern: logging.warning(
+            f"no functions matching pattern '{func_pattern}' were found"),
+        handle_matched_functions=handle_matched_functions
+    ), 0)
+
+
+def find_target_functions_by_line_patterns(
+        line_patterns: List[str],
+        functions_to_ignore: Set[str],
+        functions: Dict[str, llvm.ValueRef]
+) -> Dict[str, int]:
+    def match_function_code_line(regex_pattern: re.Pattern, func_name: str) -> Any:
+        func_code_lines = list(
+            filter(
+                lambda line: line != '', map(
+                    lambda line: line.lstrip(),
+                    str(functions[func_name]).split('\n')
+                )
+            )
+        )
+        matched_lines = [
+            line for line in func_code_lines if regex_pattern.match(line)]
+        return None if len(matched_lines) == 0 else matched_lines
+
+    def handle_matched_functions(line_pattern: str, functions_names_matched: Dict[str, List[str]]) -> List[str]:
+        filtered_matched_functions = []
+        for target_func_name, matched_lines in functions_names_matched.items():
+            is_ignored = target_func_name in functions_to_ignore
+            is_ignored_msg = "but it is ignored" if is_ignored else ""
+            matched_lines_msg = ''.join(
+                map(lambda line: f"\n\t* '{line}'", matched_lines))
+            by_lines_msg = f"\n\t| with code line{'s' if len(matched_lines) > 1 else ''} matched:{matched_lines_msg}"
+            log_msg = f"matching line pattern '{line_pattern}', found target function {is_ignored_msg}: '{target_func_name}'{by_lines_msg}\n"
+            if is_ignored:
+                logging.debug(log_msg)
+            else:
+                filtered_matched_functions.append(target_func_name)
+                logging.info(log_msg)
+        return filtered_matched_functions
+
+    return dict.fromkeys(find_matching_functions(
+        line_patterns,
+        functions,
+        match_function=match_function_code_line,
+        handle_no_matches=lambda line_pattern: logging.warning(
+            f"no functions matching line pattern '{line_pattern}' were found"),
+        handle_matched_functions=handle_matched_functions
+    ), 0)
+
+
 def find_target_functions(
     target_functions_names: Optional[List[str]],
     target_functions_patterns: Optional[List[str]],
+    target_functions_line_patterns: Optional[List[str]],
     functions_to_ignore: Set[str],
     functions: Dict[str, llvm.ValueRef]
 ) -> Dict[str, int]:
     extracted_funcs_to_depths = {}  # name: depth
-
     if target_functions_names is not None:
-        for target_func_name in dict.fromkeys(target_functions_names):
-            if target_func_name not in functions:
-                logging.warning(
-                    f"no function with the name '{target_func_name}' was found")
-            elif target_func_name in functions_to_ignore:
-                logging.debug(
-                    f"found target function by name, but it is ignored: '{target_func_name}'")
-            else:
-                extracted_funcs_to_depths[target_func_name] = 0
-                logging.info(
-                    f"found target function by name: '{target_func_name}'")
-
-    def handle_matched_functions(target_func_pattern: str, functions_names_matched: str) -> List[str]:
-        filtered_matched_functions = []
-        for target_func_name in functions_names_matched:
-            if target_func_name in functions_to_ignore:
-                logging.debug(
-                    f"matching pattern '{target_func_pattern}', found target function, but it is ignored: '{target_func_name}'")
-            else:
-                filtered_matched_functions.append(target_func_name)
-                logging.info(
-                    f"matching pattern '{target_func_pattern}', found target function: '{target_func_name}'")
-        return filtered_matched_functions
-
-    extracted_funcs_to_depths.update(dict.fromkeys(
-        find_matching_functions(
-            target_functions_patterns,
-            functions,
-            handle_no_matches=lambda target_func_pattern: logging.warning(
-                f"no functions matching pattern '{target_func_pattern}' were found"),
-            handle_matched_functions=handle_matched_functions
-        ), 0)
-    )
-
+        extracted_funcs_to_depths.update(
+            find_target_functions_by_names(
+                target_functions_names, functions_to_ignore, functions
+            )
+        )
+    if target_functions_patterns is not None:
+        extracted_funcs_to_depths.update(
+            find_target_functions_by_patterns(
+                target_functions_patterns, functions_to_ignore, functions
+            )
+        )
+    if target_functions_line_patterns is not None:
+        extracted_funcs_to_depths.update(
+            find_target_functions_by_line_patterns(
+                target_functions_line_patterns, functions_to_ignore, functions
+            )
+        )
     return extracted_funcs_to_depths
 
 
@@ -133,7 +217,7 @@ def extract_function_calls_recursively(
     while True:
         if len(work_queue) == 0:
             logging.info(
-                f"all functions calls have been found by recursion depth {cur_depth}\n")
+                f"all function calls have been found by recursion depth {cur_depth}\n")
             break
         func_name = work_queue.popleft()
         cur_depth = extracted_funcs_to_depths[func_name]
@@ -170,6 +254,7 @@ def extract_function_calls_recursively(
 def extract(
     target_functions_names: Optional[List[str]],
     target_functions_patterns: Optional[List[str]],
+    target_functions_line_patterns: Optional[List[str]],
     functions_patterns_to_ignore: Optional[List[str]],
     max_rec_depth: int,
     bitcode: str
@@ -182,14 +267,19 @@ def extract(
     functions_to_ignore = find_functions_to_ignore(
         functions_patterns_to_ignore, functions)
     extracted_funcs_to_depths = find_target_functions(
-        target_functions_names, target_functions_patterns, functions_to_ignore, functions)
+        target_functions_names,
+        target_functions_patterns,
+        target_functions_line_patterns,
+        functions_to_ignore,
+        functions
+    )
 
     if len(extracted_funcs_to_depths) == 0:
         logging.warning("no functions to extract, output file will be empty\n")
         return []
 
     if max_rec_depth != 0:  # recursive extraction is enabled
-        logging.info("----- (extract functions calls recursively)")
+        logging.info("----- (extract function calls recursively)")
         extract_function_calls_recursively(
             extracted_funcs_to_depths, max_rec_depth, functions_to_ignore, functions)
 
@@ -250,6 +340,10 @@ def parse_args() -> argparse.Namespace:
                         action='append',
                         help=('Specify functions to ignore by a regex pattern. '
                               'To provide multiple patterns use this flag several times.'))
+    parser.add_argument('-lp', '--line-pattern',
+                        action='append',
+                        help=('Extract all functions that contain at least one code line matching the pattern. '
+                              'To provide multiple patterns use this flag several times.'))
     parser.add_argument('-r', '--recursion-depth', type=nonnegative_int, default=0,
                         help=('Recursively extract all called functions at the specified depth. '
                               'Default depth is 0, meaning recursive extraction is disabled.'))
@@ -257,7 +351,7 @@ def parse_args() -> argparse.Namespace:
                         help='Print extra info messages to track the extraction process.')
 
     args = parser.parse_args()
-    if not (args.function or args.function_pattern):
+    if not (args.function or args.function_pattern or args.line_pattern):
         parser.error(
             "No action requested, at least one function to extract (by its name or a pattern) should be specified")
 
@@ -273,6 +367,7 @@ def run_tool(args: argparse.Namespace):
     extracted_symbols = extract(
         args.function,
         args.function_pattern,
+        args.line_pattern,
         args.ignore_function_pattern,
         args.recursion_depth,
         bitcode
