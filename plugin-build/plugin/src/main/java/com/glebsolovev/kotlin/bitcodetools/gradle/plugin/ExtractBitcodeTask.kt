@@ -68,6 +68,18 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     @get:Input
     @get:Option(
+        option = "ignore-function-pattern",
+        description = "Ignore all functions with the names matching the specified regex pattern. ${
+        ""
+        }Use this flag several times to provide multiple patterns to ignore, ${
+        ""
+        }e.g. `--ignore-function-pattern foo --ignore-function-pattern bar`."
+    )
+    val functionsToIgnorePatterns: ListProperty<String> =
+        objects.listProperty(String::class.java).convention(emptyList())
+
+    @get:Input
+    @get:Option(
         option = "recursionDepth",
         description =
         "Enables recursive extraction of all called functions ${
@@ -146,7 +158,9 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
                 ""
                 }${functionsToExtractPatterns.toPythonFlags("--function-pattern")}${
                 ""
-                }--recursive "${actualRecursionDepthAsString.get()}"${
+                }${functionsToIgnorePatterns.toPythonFlags("--ignore-function-pattern")}${
+                ""
+                }--recursion-depth "${actualRecursionDepthAsString.get()}"${
                 ""
                 }${if (verbose.get()) " --verbose" else ""}
                 """.trimIndent()

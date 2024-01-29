@@ -63,12 +63,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             }.forEach { pipeline ->
                 pipeline.registerTasks(
                     project,
-                    extractBitcodeTaskParameters = ExtractBitcodeTaskParameters(
-                        functionsToExtractNames = extractBitcodeExtension.functionsToExtractNames.get(),
-                        functionsToExtractPatterns = extractBitcodeExtension.functionsToExtractPatterns.get(),
-                        recursionDepth = extractBitcodeExtension.recursionDepth,
-                        verbose = extractBitcodeExtension.verbose
-                    ),
+                    extractBitcodeTaskParameters = extractBitcodeExtension.toExtractBitcodeTaskParameters(),
                     setCompilerFlags = decompileBitcodeExtension.setCompilerFlags
                 )
             }
@@ -121,6 +116,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             outputFilePath = extractedBitcodeFilePath
             functionsToExtractNames = taskParameters.functionsToExtractNames
             functionsToExtractPatterns = taskParameters.functionsToExtractPatterns
+            functionsToIgnorePatterns = taskParameters.functionsToIgnorePatterns
             recursionDepth = taskParameters.recursionDepth
             verbose = taskParameters.verbose
             doFirst {
@@ -192,6 +188,14 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
         )
     }
 
+    private fun ExtractBitcodeExtension.toExtractBitcodeTaskParameters() = ExtractBitcodeTaskParameters(
+        functionsToExtractNames = functionsToExtractNames.get(),
+        functionsToExtractPatterns = functionsToExtractPatterns.get(),
+        functionsToIgnorePatterns = functionsToIgnorePatterns.get(),
+        recursionDepth = recursionDepth,
+        verbose = verbose
+    )
+
     private fun Project.resolveToRelativeDirectory(directoryPath: String) =
         layout.projectDirectory.dir(directoryPath)
 
@@ -218,6 +222,7 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
     private data class ExtractBitcodeTaskParameters(
         val functionsToExtractNames: List<String>,
         val functionsToExtractPatterns: List<String>,
+        val functionsToIgnorePatterns: List<String>,
         val recursionDepth: UInt,
         val verbose: Boolean,
     )

@@ -74,3 +74,9 @@ jobs:
           ./gradlew :example:extractSomeBitcode --function-pattern '.*#main.*' --function-pattern '.*#mai.*' --function-pattern 'ThrowIllegalArgumentException' --function-pattern 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/patterns.ll" --verbose
           test -f example/build/bitcode/patterns.ll
         if: success()
+
+      - name: Test ignore functions by patterns
+        run: |
+          ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --function 'ThrowIllegalArgumentException' --ignore-function-pattern '.*#main.*' --ignore-function-pattern 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/ignore-patterns.ll" --verbose
+          test -f example/build/bitcode/ignore-patterns.ll
+        if: success()

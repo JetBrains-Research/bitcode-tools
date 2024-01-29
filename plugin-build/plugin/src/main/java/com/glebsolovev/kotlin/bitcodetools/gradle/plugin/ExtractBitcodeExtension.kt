@@ -11,6 +11,7 @@ abstract class ExtractBitcodeExtension @Inject constructor(project: Project) {
 
     val functionsToExtractNames: ListProperty<String> = objects.listProperty(String::class.java)
     val functionsToExtractPatterns: ListProperty<String> = objects.listProperty(String::class.java)
+    val functionsToIgnorePatterns: ListProperty<String> = objects.listProperty(String::class.java)
 
     var recursionDepth: UInt = 0u
     var verbose: Boolean = false

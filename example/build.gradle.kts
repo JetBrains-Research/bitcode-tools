@@ -81,6 +81,7 @@ extractFromDecompiledBitcodeConfig {
     functionsToExtractNames = listOf("kfun:#main(){}")
     functionsToExtractNames.add("ThrowIllegalArgumentException")
     functionsToExtractPatterns.add(".*main.*")
+    functionsToIgnorePatterns.add("kfun:kotlin.*")
     recursionDepth = 1u
     verbose = true
 }
