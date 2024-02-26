@@ -98,12 +98,16 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         description =
         "Enables recursive extraction of all called functions ${
         ""
-        }up to the specified depth relative to `functionToExtractName`. ${
+        }up to the specified depth relative to the target functions. ${
         ""
         }Default depth is 0, meaning recursive extraction is disabled."
     )
     protected val actualRecursionDepthAsString: Property<String> =
-        objects.property(String::class.java).convention(recursionDepth.toString())
+        objects.property(String::class.java).convention(
+            project.provider {
+                recursionDepth.toString()
+            }
+        )
 
     @get:Input
     @get:Option(
