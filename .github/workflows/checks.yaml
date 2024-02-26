@@ -1,4 +1,4 @@
-name: Pre Merge Checks
+name: Checks
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run Gradle verification tasks
-        run: ./gradlew preMerge --continue
+        run: ./gradlew preMerge --continue # execute each of subtasks even if one fails
 
       - name: Test `decompileBitcode` task
         run: |
@@ -69,20 +69,35 @@ jobs:
           test -f example/build/bitcode/multiple-functions.ll
         if: success()
 
-      - name: Test functions extraction by patterns
+      - name: Test extraction by function patterns
         run: |
           ./gradlew :example:extractSomeBitcode --function-pattern '.*#main.*' --function-pattern '.*#mai.*' --function-pattern 'ThrowIllegalArgumentException' --function-pattern 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/patterns.ll" --verbose
           test -f example/build/bitcode/patterns.ll
         if: success()
 
-      - name: Test ignore functions by patterns
+      - name: Test ignore by function patterns
         run: |
           ./gradlew :example:extractSomeBitcode --function 'kfun:#main(){}' --function 'ThrowIllegalArgumentException' --ignore-function-pattern '.*#main.*' --ignore-function-pattern 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/ignore-patterns.ll" --verbose
           test -f example/build/bitcode/ignore-patterns.ll
         if: success()
 
-      - name: Test functions extraction by patterns
+      - name: Test extraction by line patterns
         run: |
           ./gradlew :example:extractSomeBitcode --line-pattern '.*kfun:.*#hashCode\(\)\{\}kotlin\.Int' --line-pattern 'unreachable' --line-pattern 'non-existent' --input "build/bitcode/bitcode.ll" --output "build/bitcode/line-patterns.ll" --verbose
           test -f example/build/bitcode/line-patterns.ll
+        if: success()
+
+      # warning: this test depends on the build.gradle.kts configuration
+      - name: Test standalone `decompileSomeBitcode` task customization
+        run: |
+          ./gradlew :example:decompileBitcode
+          ./gradlew :example:decompileSomeBitcode --input "build/bitcode/releaseSources/out.bc"
+          test -f example/build/bitcode/standalone-bitcode.ll
+        if: success()
+
+      # warning: this test depends on the build.gradle.kts configuration
+      - name: Test custom ExtractBitcodeTask
+        run: |
+          ./gradlew :example:extractCustomBitcode --output "build/bitcode/custom-bitcode.ll"
+          test -f example/build/bitcode/custom-bitcode.ll
         if: success()
