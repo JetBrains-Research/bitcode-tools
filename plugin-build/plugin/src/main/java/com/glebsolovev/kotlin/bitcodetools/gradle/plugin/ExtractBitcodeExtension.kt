@@ -1,16 +1,22 @@
 package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
 
 import org.gradle.api.Project
+import org.gradle.api.provider.ListProperty
 import javax.inject.Inject
 
 @Suppress("UnnecessaryAbstractClass")
 abstract class ExtractBitcodeExtension @Inject constructor(project: Project) {
 
-    @Suppress("unused") // required to initialize properties of type Property<*> correctly
     private val objects = project.objects
 
-    var functionToExtractName: String = "kfun:#main(){}"
+    val functionNames: ListProperty<String> = objects.listProperty(String::class.java)
+    val functionPatterns: ListProperty<String> = objects.listProperty(String::class.java)
+    val linePatterns: ListProperty<String> = objects.listProperty(String::class.java)
+    val ignorePatterns: ListProperty<String> = objects.listProperty(String::class.java)
+
     var recursionDepth: UInt = 0u
+    var verbose: Boolean = false
+
     var outputFileName: String = "extracted-bitcode.ll"
     var debugOutputFileName: String = "extracted-bitcode-debug.ll"
 }

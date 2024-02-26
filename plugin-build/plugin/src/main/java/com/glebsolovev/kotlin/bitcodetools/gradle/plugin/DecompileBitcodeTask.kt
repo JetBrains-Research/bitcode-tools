@@ -23,14 +23,14 @@ abstract class DecompileBitcodeTask @Inject constructor(project: Project) : Defa
     @get:Internal
     @get:Option(
         option = "input",
-        description = "Path (relative to root) to the input bitcode `.bc` file."
+        description = "Path (relative to the project's root) to the input bitcode `.bc` file."
     )
     val inputFilePath: Property<String> = objects.property(String::class.java)
 
     @get:Internal
     @get:Option(
         option = "output",
-        description = "Path (relative to root) to the output human-readable `.ll` file."
+        description = "Path (relative to the project's root) to the output human-readable `.ll` file."
     )
     val outputFilePath: Property<String> = objects.property(String::class.java)
 

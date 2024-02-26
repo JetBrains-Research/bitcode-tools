@@ -1,3 +1,6 @@
+import com.glebsolovev.kotlin.bitcodetools.gradle.plugin.DecompileBitcodeTask
+import com.glebsolovev.kotlin.bitcodetools.gradle.plugin.ExtractBitcodeTask
+
 plugins {
     kotlin("multiplatform")
     id("com.glebsolovev.kotlin.bitcodetools.gradle.plugin")
@@ -51,6 +54,13 @@ kotlin {
     }
 }
 
+/* Configure the bitcode-analysis pipeline for your Kotlin/Native project:
+ * `decompileBitcode` and `decompileDebugBitcode` tasks;
+ * `extractBitcode` and `extractDebugBitcode` tasks.
+ * They are connected to the project and to each other,
+ * so do not use them to analyze some stand-alone code.
+ */
+
 decompileBitcodeConfig {
     val hostOs: String = System.getProperty("os.name")
     val arch: String = System.getProperty("os.arch")
@@ -62,7 +72,6 @@ decompileBitcodeConfig {
         else -> throw GradleException("Unsupported target platform: $hostOs / $arch")
     }
     linkDebugTaskName = linkTaskName.replace("Release", "Debug")
-    tmpArtifactsDirectoryPath = "build/bitcode"
     setCompilerFlags = { compilerFlags ->
         kotlin {
             listOf(macosX64(), macosArm64(), mingwX64(), linuxX64()).forEach {
@@ -73,10 +82,49 @@ decompileBitcodeConfig {
         }
         println("[example] following compiler flags are set: $compilerFlags")
     }
+    artifactsDirectoryPath = "build/bitcode"
     llOutputFileName = "example-bitcode.ll"
     llDebugOutputFileName = "example-bitcode-debug.ll"
 }
 
 extractFromDecompiledBitcodeConfig {
+    functionNames = listOf("kfun:#main(){}", "ThrowIllegalArgumentException")
+    functionPatterns = listOf(".*main.*")
+    linePatterns = listOf(
+        "%2 = icmp eq i64 %1, 0",
+        ".*call.*kfun:.*#hashCode\\(\\)\\{\\}kotlin\\.Int.*"
+    )
+    ignorePatterns = listOf("kfun:kotlin.*")
     recursionDepth = 1u
+    verbose = true
+}
+
+/* The stand-alone tasks are already registered.
+ * However, you can make them more convenient:
+ * configure the default values of the most frequently used arguments here and
+ * define others & override the configured ones in the command line.
+ */
+
+tasks.named<DecompileBitcodeTask>("decompileSomeBitcode") {
+    outputFilePath = "build/bitcode/standalone-bitcode.ll"
+}
+
+tasks.named<ExtractBitcodeTask>("extractSomeBitcode") {
+    recursionDepth = 1u
+    inputFilePath = "build/bitcode/standalone-bitcode.ll"
+    verbose = true
+}
+
+/* Register new custom ExtractBitcodeTask &
+ * configure it with the full power of Gradle.
+ */
+
+tasks.register<ExtractBitcodeTask>("extractCustomBitcode") {
+    dependsOn("decompileBitcode")
+    doFirst {
+        println("It's impolite not to say hello at the very beginning. So, hello!")
+    }
+    inputFilePath = "build/bitcode/bitcode.ll"
+    outputFilePath = "build/bitcode/custom-bitcode.ll"
+    functionNames = listOf("kfun:#main(){}")
 }

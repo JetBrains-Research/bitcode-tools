@@ -31,6 +31,8 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             ""
             }If you still would like to overcome this behaviour, ${
             ""
+            }use the standalone `extractSomeBitcode` task / ${
+            ""
             }register a custom `ExtractBitcodeTask` task and run it instead."
 
         const val GROUP_NAME = "bitcode analysis"
@@ -40,25 +42,28 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
         val (decompileBitcodeExtension, extractBitcodeExtension) = project.createExtensions()
         project.registerStandaloneBitcodeTasks()
         project.afterEvaluate {
-            val tmpArtifactsDirectory = resolveToRelativeDirectory(decompileBitcodeExtension.tmpArtifactsDirectoryPath)
-            listOf(
-                resolveReleasePipelineParameters(
-                    tmpArtifactsDirectory,
-                    decompileBitcodeExtension,
-                    extractBitcodeExtension
-                ),
-                resolveDebugPipelineParameters(
-                    tmpArtifactsDirectory,
-                    decompileBitcodeExtension,
-                    extractBitcodeExtension
+            val artifactsDirectory = resolveToRelativeDirectory(decompileBitcodeExtension.artifactsDirectoryPath)
+            buildList {
+                add(
+                    resolveReleasePipelineParameters(
+                        artifactsDirectory,
+                        decompileBitcodeExtension,
+                        extractBitcodeExtension
+                    )
                 )
-            ).forEach {
-                it.registerTasks(
+                if (decompileBitcodeExtension.linkDebugTaskName != null) {
+                    add(
+                        resolveDebugPipelineParameters(
+                            artifactsDirectory,
+                            decompileBitcodeExtension,
+                            extractBitcodeExtension
+                        )
+                    )
+                }
+            }.forEach { pipeline ->
+                pipeline.registerTasks(
                     project,
-                    extractBitcodeTaskParameters = ExtractBitcodeTaskParameters(
-                        functionToExtractName = extractBitcodeExtension.functionToExtractName,
-                        recursionDepth = extractBitcodeExtension.recursionDepth
-                    ),
+                    extractBitcodeTaskParameters = extractBitcodeExtension.toExtractBitcodeTaskParameters(),
                     setCompilerFlags = decompileBitcodeExtension.setCompilerFlags
                 )
             }
@@ -109,8 +114,12 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             dependsOn(decompileBitcodeTaskName)
             inputFilePath = llFilePath
             outputFilePath = extractedBitcodeFilePath
-            functionToExtractName = taskParameters.functionToExtractName
+            functionNames = taskParameters.functionNames
+            functionPatterns = taskParameters.functionPatterns
+            linePatterns = taskParameters.linePatterns
+            ignorePatterns = taskParameters.ignorePatterns
             recursionDepth = taskParameters.recursionDepth
+            verbose = taskParameters.verbose
             doFirst {
                 if (inputFilePath.orNull != llFilePath) {
                     throw BitcodeAnalysisException(PIPELINE_VIOLATION_ERROR_MESSAGE)
@@ -140,31 +149,31 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
     }
 
     private fun Project.resolveReleasePipelineParameters(
-        tmpArtifactsDirectory: Directory,
+        artifactsDirectory: Directory,
         decompileBitcodeExtension: DecompileBitcodeExtension,
         extractBitcodeExtension: ExtractBitcodeExtension,
     ): BitcodeAnalysisPipelineParameters {
-        val bitcodeSourcesDirectory = tmpArtifactsDirectory.dir(RELEASE_BITCODE_SOURCES_DIR_NAME)
+        val bitcodeSourcesDirectory = artifactsDirectory.dir(RELEASE_BITCODE_SOURCES_DIR_NAME)
         return BitcodeAnalysisPipelineParameters(
             linkTaskName = decompileBitcodeExtension.linkTaskName,
             decompileBitcodeTaskName = RELEASE_DECOMPILE_BITCODE_TASK_NAME,
             extractBitcodeTaskName = RELEASE_EXTRACT_BITCODE_TASK_NAME,
             bitcodeSourcesDirectory = bitcodeSourcesDirectory,
             bcFilePath = resolveToRelativePath(bitcodeSourcesDirectory, decompileBitcodeExtension.bcInputFileName),
-            llFilePath = resolveToRelativePath(tmpArtifactsDirectory, decompileBitcodeExtension.llOutputFileName),
+            llFilePath = resolveToRelativePath(artifactsDirectory, decompileBitcodeExtension.llOutputFileName),
             extractedBitcodeFilePath = resolveToRelativePath(
-                tmpArtifactsDirectory,
+                artifactsDirectory,
                 extractBitcodeExtension.outputFileName
             )
         )
     }
 
     private fun Project.resolveDebugPipelineParameters(
-        tmpArtifactsDirectory: Directory,
+        artifactsDirectory: Directory,
         decompileBitcodeExtension: DecompileBitcodeExtension,
         extractBitcodeExtension: ExtractBitcodeExtension,
     ): BitcodeAnalysisPipelineParameters {
-        val bitcodeSourcesDirectory = tmpArtifactsDirectory.dir(DEBUG_BITCODE_SOURCES_DIR_NAME)
+        val bitcodeSourcesDirectory = artifactsDirectory.dir(DEBUG_BITCODE_SOURCES_DIR_NAME)
         return BitcodeAnalysisPipelineParameters(
             linkTaskName = decompileBitcodeExtension.linkDebugTaskName
                 ?: error("debug pipeline can be registered only if `linkDebugTaskName` is set"),
@@ -172,13 +181,22 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
             extractBitcodeTaskName = DEBUG_EXTRACT_BITCODE_TASK_NAME,
             bitcodeSourcesDirectory = bitcodeSourcesDirectory,
             bcFilePath = resolveToRelativePath(bitcodeSourcesDirectory, decompileBitcodeExtension.bcInputFileName),
-            llFilePath = resolveToRelativePath(tmpArtifactsDirectory, decompileBitcodeExtension.llDebugOutputFileName),
+            llFilePath = resolveToRelativePath(artifactsDirectory, decompileBitcodeExtension.llDebugOutputFileName),
             extractedBitcodeFilePath = resolveToRelativePath(
-                tmpArtifactsDirectory,
+                artifactsDirectory,
                 extractBitcodeExtension.debugOutputFileName
             )
         )
     }
+
+    private fun ExtractBitcodeExtension.toExtractBitcodeTaskParameters() = ExtractBitcodeTaskParameters(
+        functionNames = functionNames.get(),
+        functionPatterns = functionPatterns.get(),
+        linePatterns = linePatterns.get(),
+        ignorePatterns = ignorePatterns.get(),
+        recursionDepth = recursionDepth,
+        verbose = verbose
+    )
 
     private fun Project.resolveToRelativeDirectory(directoryPath: String) =
         layout.projectDirectory.dir(directoryPath)
@@ -204,7 +222,11 @@ abstract class BitcodeAnalysisPlugin : Plugin<Project> {
     }
 
     private data class ExtractBitcodeTaskParameters(
-        val functionToExtractName: String,
+        val functionNames: List<String>,
+        val functionPatterns: List<String>,
+        val linePatterns: List<String>,
+        val ignorePatterns: List<String>,
         val recursionDepth: UInt,
+        val verbose: Boolean,
     )
 }
