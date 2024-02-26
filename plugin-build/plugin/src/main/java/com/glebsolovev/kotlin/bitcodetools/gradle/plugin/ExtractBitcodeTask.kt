@@ -31,14 +31,14 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     @get:Internal
     @get:Option(
         option = "input",
-        description = "Path (relative to root) to the input `.ll` file."
+        description = "Path (relative to the project's root) to the input `.ll` file."
     )
     val inputFilePath: Property<String> = objects.property(String::class.java)
 
     @get:Internal
     @get:Option(
         option = "output",
-        description = "Path (relative to root) to the output `.ll` file with the extracted bitcode."
+        description = "Path (relative to the project's root) to the output `.ll` file with the extracted bitcode."
     )
     val outputFilePath: Property<String> = objects.property(String::class.java)
 
@@ -94,7 +94,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
 
     @get:Input
     @get:Option(
-        option = "recursionDepth",
+        option = "recursion-depth",
         description =
         "Enables recursive extraction of all called functions ${
         ""
