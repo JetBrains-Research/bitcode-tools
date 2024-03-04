@@ -1,9 +1,9 @@
-import com.glebsolovev.kotlin.bitcodetools.gradle.plugin.DecompileBitcodeTask
-import com.glebsolovev.kotlin.bitcodetools.gradle.plugin.ExtractBitcodeTask
+import org.jetbrains.bitcodetools.plugin.DecompileBitcodeTask
+import org.jetbrains.bitcodetools.plugin.ExtractBitcodeTask
 
 plugins {
     kotlin("multiplatform")
-    id("com.glebsolovev.kotlin.bitcodetools.gradle.plugin")
+    id("org.jetbrains.bitcodetools.plugin")
 }
 
 group = "me.user"

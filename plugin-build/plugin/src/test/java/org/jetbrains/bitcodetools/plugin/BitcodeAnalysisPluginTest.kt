@@ -1,4 +1,4 @@
-package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
+package org.jetbrains.bitcodetools.plugin
 
 import org.junit.Test
 

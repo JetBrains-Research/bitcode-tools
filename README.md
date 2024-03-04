@@ -125,7 +125,7 @@ Finally, add the plugin to your `build.gradle.kts` by its id. Here is an example
 plugins {
     kotlin("multiplatform")
     // ... other plugins you might have
-    id("com.glebsolovev.kotlin.bitcodetools.gradle.plugin")
+    id("org.jetbrains.bitcodetools.plugin")
 }
 ``` 
 If your working in IDE, it'd better to rebuild Gradle at this point, so to access lovely DSL auto-completion.

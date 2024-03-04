@@ -56,7 +56,7 @@ In the [.github/workflows/](.github/workflows/) folder you can find scripts for 
 
 In this section you can find the tasks waiting to be done in order to make the plugin more powerful and well-maintained. If you'd like to solve some of them, we'll appreciate your help 🤍
 
-* Write actual tests for the plugin. So far [the test folder](plugin-build/plugin/src/test/java/com/glebsolovev/kotlin/bitcodetools/gradle/plugin/) contains only a mock one.
+* Write actual tests for the plugin. So far [the test folder](plugin-build/plugin/src/test/java/org/jetbrains/bitcodetools/plugin/) contains only a mock one.
 * Support `–no-std-lib` option. The basic implemention is just to ignore the `kfun:kotlin.*` functions.
 * Optimize the `linePatterns` search. Current Python implementation takes some noticeable time when executed on the huge projects due to regexes being used too straightforwardly.
 * Build the complete graph of the functions calls. That will allow to implement the following features.
