@@ -1,8 +1,9 @@
 # Bitcode tools for Kotlin/Native projects 🄺🄽🐘
 
+[![JetBrains Research](https://jb.gg/badges/research.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
+[![Checks](https://github.com/GlebSolovev/bitcode-tools/actions/workflows/checks.yaml/badge.svg?branch=main)](https://github.com/GlebSolovev/bitcode-tools/actions/workflows/checks.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributions welcome](https://img.shields.io/badge/Contributions-welcome-brightgreen.svg?style=flat)](#contributing--developing)
-[![Checks](https://github.com/GlebSolovev/bitcode-tools/actions/workflows/checks.yaml/badge.svg?branch=main)](https://github.com/GlebSolovev/bitcode-tools/actions/workflows/checks.yaml)
 
 A simple **Gradle plugin** that provides tasks **to obtain and analyze bitcode** for any Kotlin/Native projects.
 
