@@ -1,4 +1,4 @@
-package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
+package org.jetbrains.bitcodetools.plugin
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
@@ -11,6 +11,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.options.Option
 import javax.inject.Inject
 
+/** Gradle task that decompiles a bitcode `.bc` file into a human-readable `.ll` one. */
 abstract class DecompileBitcodeTask @Inject constructor(project: Project) : DefaultTask() {
 
     init {
@@ -20,6 +21,7 @@ abstract class DecompileBitcodeTask @Inject constructor(project: Project) : Defa
 
     private val objects = project.objects
 
+    /** Path (relative to the project's root) to the input bitcode `.bc` file. */
     @get:Internal
     @get:Option(
         option = "input",
@@ -27,6 +29,7 @@ abstract class DecompileBitcodeTask @Inject constructor(project: Project) : Defa
     )
     val inputFilePath: Property<String> = objects.property(String::class.java)
 
+    /** Path (relative to the project's root) to the output human-readable `.ll` file. */
     @get:Internal
     @get:Option(
         option = "output",
@@ -34,16 +37,25 @@ abstract class DecompileBitcodeTask @Inject constructor(project: Project) : Defa
     )
     val outputFilePath: Property<String> = objects.property(String::class.java)
 
+    /**
+     * By default, stores [inputFilePath] resolved to the project's directory.
+     * This property is expected to be readonly.
+     */
     @get:InputFile
     val actualInputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(inputFilePath)
     )
 
+    /**
+     * By default, stores [outputFilePath] resolved to the project's directory.
+     * This property is expected to be readonly.
+     */
     @get:OutputFile
     val actualOutputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(outputFilePath)
     )
 
+    /** Decompiles bitcode file to its human-readable version. */
     @TaskAction
     fun produce() {
         val bcFilePath = actualInputFile.get().asFile.absolutePath

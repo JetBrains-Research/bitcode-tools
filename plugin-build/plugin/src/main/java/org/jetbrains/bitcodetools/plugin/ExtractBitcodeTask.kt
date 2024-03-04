@@ -1,4 +1,4 @@
-package com.glebsolovev.kotlin.bitcodetools.gradle.plugin
+package org.jetbrains.bitcodetools.plugin
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
@@ -15,6 +15,7 @@ import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.io.path.writeText
 
+/** Gradle task that extracts the specified elements from a bitcode `.ll` file effectively. */
 abstract class ExtractBitcodeTask @Inject constructor(project: Project) : DefaultTask() {
 
     init {
@@ -28,6 +29,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
         private const val EXTRACT_BITCODE_SCRIPT_PATH = "/extract-bitcode.py"
     }
 
+    /** Path (relative to the project's root) to the input `.ll` file. */
     @get:Internal
     @get:Option(
         option = "input",
@@ -35,6 +37,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     )
     val inputFilePath: Property<String> = objects.property(String::class.java)
 
+    /** Path (relative to the project's root) to the output `.ll` file with the extracted bitcode. */
     @get:Internal
     @get:Option(
         option = "output",
@@ -42,9 +45,15 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     )
     val outputFilePath: Property<String> = objects.property(String::class.java)
 
+    /**
+     * Enables recursive extraction of all called functions
+     * up to the specified depth, relative to the target functions.
+     * Default depth is `0`, meaning recursive extraction is disabled.
+     */
     @get:Internal
     var recursionDepth: UInt = 0u
 
+    /** Names of the functions to extract (should be specified exactly the same as in the bitcode file). */
     @get:Input
     @get:Option(
         option = "function",
@@ -54,6 +63,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     )
     val functionNames: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
 
+    /** Extract all functions with the names matching the specified regex patterns. */
     @get:Input
     @get:Option(
         option = "function-pattern",
@@ -66,6 +76,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     val functionPatterns: ListProperty<String> =
         objects.listProperty(String::class.java).convention(emptyList())
 
+    /** Extract all functions that contain at least one code line matching the specified regex patterns. */
     @get:Input
     @get:Option(
         option = "line-pattern",
@@ -80,6 +91,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     val linePatterns: ListProperty<String> =
         objects.listProperty(String::class.java).convention(emptyList())
 
+    /** Ignore all functions with the names matching the specified regex patterns. */
     @get:Input
     @get:Option(
         option = "ignore-function-pattern",
@@ -92,6 +104,10 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     val ignorePatterns: ListProperty<String> =
         objects.listProperty(String::class.java).convention(emptyList())
 
+    /**
+     * Property that is used to support [recursionDepth] parameter in the command line.
+     * It uses [recursionDepth] value by default properly,
+     * so it is not recommended to modify this property. */
     @get:Input
     @get:Option(
         option = "recursion-depth",
@@ -109,6 +125,10 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
             }
         )
 
+    /**
+     * Enables logging: prints extra info messages to the console
+     * to track the extraction process. It is disabled by default.
+     */
     @get:Input
     @get:Option(
         option = "verbose",
@@ -116,11 +136,19 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
     )
     val verbose: Property<Boolean> = objects.property(Boolean::class.java).convention(false)
 
+    /**
+     * By default, stores [inputFilePath] resolved to the project's directory.
+     * This property is expected to be readonly.
+     */
     @get:InputFile
     val actualInputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(inputFilePath)
     )
 
+    /**
+     * By default, stores [outputFilePath] resolved to the project's directory.
+     * This property is expected to be readonly.
+     */
     @get:OutputFile
     val actualOutputFile: RegularFileProperty = objects.fileProperty().value(
         project.layout.projectDirectory.file(outputFilePath)
@@ -155,6 +183,7 @@ abstract class ExtractBitcodeTask @Inject constructor(project: Project) : Defaul
             }
         }
 
+    /** Performs bitcode extraction. */
     @TaskAction
     fun produce() {
         validateArguments()
