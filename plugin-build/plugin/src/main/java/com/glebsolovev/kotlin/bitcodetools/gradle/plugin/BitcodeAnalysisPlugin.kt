@@ -8,6 +8,9 @@ import org.gradle.api.file.Directory
 import org.gradle.kotlin.dsl.*
 import java.nio.file.Files.createDirectories
 
+/**
+ * Gradle plugin that provides various tasks to perform bitcode analysis
+ * of the Kotlin/Native code and Kotlin/Native projects. */
 abstract class BitcodeAnalysisPlugin : Plugin<Project> {
 
     companion object {
