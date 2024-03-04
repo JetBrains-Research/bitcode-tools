@@ -50,7 +50,9 @@ In the [.github/workflows/](.github/workflows/) folder you can find scripts for 
 
 * The most important one is the [`checks.yaml`](.github/workflows/checks.yaml): it installs the necessary dependencies, runs the linters and implemented tests, and, finally, executes several checks to make sure the plugin actually provides the tasks in the example project.
 * The [`gradle-wrapper-validation.yaml`](.github/workflows/gradle-wrapper-validation.yml) also runs on each pull-request: it simply checks that the gradle wrapper has a valid checksum.
-* The [`publish-plugin.yaml`](.github/workflows/publish-plugin.yaml) one automatically publishes the plugin whenever new tag is pushed. It requires some environment set-up, check the publish plugin section for the details (TODO).
+* The [`publish-plugin.yaml`](.github/workflows/publish-plugin.yaml) one automatically publishes the plugin whenever new tag is pushed. 
+  * It requires some environment set-up to finish successfully. Namely, two GitHub secrets should be set: `GRADLE_PUBLISH_KEY` and `GRADLE_PUBLISH_SECRET` with the credentials that can be found in the Gradle Portal profile. However, it should be done only once for the repo.
+  * Moreover, before publishing the plugin don't forget to get acquainted with the Gradle Portal publishing rules. There exist many limitations on plugin's metainformation and project's appearance.
 
 ## Future plans
 
