@@ -1,7 +1,7 @@
 # Bitcode tools for Kotlin/Native projects 🄺🄽🐘
 
 [![JetBrains Research](https://jb.gg/badges/research.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
-[![Checks](https://github.com/GlebSolovev/bitcode-tools/actions/workflows/checks.yaml/badge.svg?branch=main)](https://github.com/GlebSolovev/bitcode-tools/actions/workflows/checks.yaml)
+[![Checks](https://github.com/JetBrains-Research/bitcode-tools/actions/workflows/checks.yaml/badge.svg?branch=main)](https://github.com/JetBrains-Research/bitcode-tools/actions/workflows/checks.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributions welcome](https://img.shields.io/badge/Contributions-welcome-brightgreen.svg?style=flat)](#contributing--developing)
 
@@ -110,7 +110,7 @@ The standard way to install a Gradle plugin is to obtain it from *Maven Reposito
 Clone this repository into a new directory locally. It's recommended not to make it a subproject of some Gradle project, since it may require additional configuration.
 ```bash
 # clones the repo into a new folder `bitcode-analysis-plugin`
-git clone https://github.com/GlebSolovev/bitcode-tools.git bitcode-analysis-plugin
+git clone https://github.com/JetBrains-Research/bitcode-tools bitcode-analysis-plugin
 ```
 Now link the folder with the plugin repository to your Kotlin/Native project. To do that, add the following code into the `settings.gradle.kts` file of your project.
 ```kotlin
