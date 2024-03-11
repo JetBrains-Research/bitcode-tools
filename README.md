@@ -17,8 +17,6 @@ A simple **Gradle plugin** that provides tasks **to obtain and analyze bitcode**
     - [Python dependencies](#python-dependencies)
     - [LLVM dependency](#llvm-dependency)
   - [Apply plugin](#apply-plugin)
-    - [Clone project locally](#clone-project-locally)
-    - [Apply by id](#apply-by-id)
   - [Set up plugin](#set-up-plugin)
     - [Required set-up](#required-set-up)
     - [Access debug tasks](#access-debug-tasks)
@@ -103,33 +101,16 @@ llvm-config --version
 
 ## Apply plugin
 
-The standard way to install a Gradle plugin is to obtain it from *Maven Repository* automatically. Unfortunately, the bitcode-analysis plugin has not been published there so far. Therefore, the only way to install it is to clone this repository locally. 
+Since the plugin was published at Gradle Plugin Portal, it can be simply applied by id in your `build.gradle.kts`. The plugin's version is mandatory, the latest is [`1.0.0`](https://github.com/JetBrains-Research/bitcode-tools/releases/tag/v1.0.0).
 
-### Clone project locally
-
-Clone this repository into a new directory locally. It's recommended not to make it a subproject of some Gradle project, since it may require additional configuration.
-```bash
-# clones the repo into a new folder `bitcode-analysis-plugin`
-git clone https://github.com/JetBrains-Research/bitcode-tools bitcode-analysis-plugin
-```
-Now link the folder with the plugin repository to your Kotlin/Native project. To do that, add the following code into the `settings.gradle.kts` file of your project.
-```kotlin
-pluginManagement {
-    includeBuild("absolute-path-to-the-bitcode-analysis-plugin")
-}
-```
-
-### Apply by id
-
-Finally, add the plugin to your `build.gradle.kts` by its id. Here is an example.
 ```kotlin
 plugins {
     kotlin("multiplatform")
     // ... other plugins you might have
-    id("org.jetbrains.bitcodetools.plugin")
+    id("org.jetbrains.bitcodetools.plugin") version "1.0.0"
 }
 ``` 
-If your working in IDE, it'd better to rebuild Gradle at this point, so to access lovely DSL auto-completion.
+If your working in IDE, it'd better to rebuild Gradle at this point, so to access the lovely DSL auto-completion 🤖.
 
 ## Set up plugin
 

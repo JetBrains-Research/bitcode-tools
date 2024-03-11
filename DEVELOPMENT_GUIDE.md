@@ -4,6 +4,9 @@ In this document you can find some technical details about the inside of the pro
 
 - [Development guide](#development-guide)
   - [Created from the Gradle-plugins template](#created-from-the-gradle-plugins-template)
+  - [Experiment with the latest build](#experiment-with-the-latest-build)
+    - [Clone project locally](#clone-project-locally)
+    - [Apply by id](#apply-by-id)
   - [Project's structure](#projects-structure)
   - [Useful Gradle tasks](#useful-gradle-tasks)
   - [GitHub CI](#github-ci)
@@ -20,6 +23,35 @@ That means the following items are organized the same:
 * GitHub CI.
 
 Therefore, you can read more about them in [the template's README.md](https://github.com/cortinico/kotlin-gradle-plugin-template/blob/main/README.md). Nevertheless, the most important notes can be found in the next sections of this document.
+
+## Experiment with the latest build 
+
+If you'd like to experiment with the very latest project's version in the repo &mdash; it is definitely possible to do even without waiting for the new release to be published.
+
+### Clone project locally
+
+Clone this repository into a new directory locally. It's recommended not to make it a subproject of some Gradle project, since it may require additional configuration.
+```bash
+# clones the repo into a new folder `bitcode-analysis-plugin`
+git clone https://github.com/JetBrains-Research/bitcode-tools bitcode-analysis-plugin
+```
+Now link the folder with the plugin repository to your Kotlin/Native project. To do that, add the following code into the `settings.gradle.kts` file of your project.
+```kotlin
+pluginManagement {
+    includeBuild("absolute-path-to-the-bitcode-analysis-plugin")
+}
+```
+
+### Apply by id
+
+Finally, add the plugin to your `build.gradle.kts` by its id. Here is an example.
+```kotlin
+plugins {
+    kotlin("multiplatform")
+    // ... other plugins you might have
+    id("org.jetbrains.bitcodetools.plugin")
+}
+```
 
 ## Project's structure
 

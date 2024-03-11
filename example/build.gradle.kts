@@ -3,7 +3,7 @@ import org.jetbrains.bitcodetools.plugin.ExtractBitcodeTask
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.bitcodetools.plugin")
+    id("org.jetbrains.bitcodetools.plugin") version "1.0.0"
 }
 
 group = "me.user"
